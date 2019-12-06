@@ -1,0 +1,12 @@
+<?xml version="1.0">
+	<names>
+		<Denny>
+			<age>19</age>
+			<IQ>500</IQ>
+		</Denny>
+		<Alex>
+			<age>2</age>
+			<IQ>-2<IQ>
+		</Alex>
+	</names>
+</xml>
