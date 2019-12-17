@@ -1,5 +1,6 @@
 
 function read() {
+	document.getElementById("header").innerHTML = "File Uploaded..."
 	var gpxFile = document.getElementById("GPX_file");
 	var name = gpxFile.name;
 	alert(gpxFile.value.concat(" file len: ", gpxFile.len));
