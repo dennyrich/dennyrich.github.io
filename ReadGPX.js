@@ -1,22 +1,16 @@
 
 function read() {
 	document.getElementById("header").innerHTML = "File Uploaded..."
-	var gpxFile = document.getElementById("GPX_file");
+	const gpxFile = document.getElementById("GPX_file").files[0];
 	var name = gpxFile.name;
-	alert(gpxFile.value.concat(" file len: ", gpxFile.len));
+	alert("file name: " + name + " file size: " + gpxFile.size);
 
-	//	
-	var request = new XMLHttpRequest();
+	let parser = new DOMParser();
+
+
+
 	
-	request.open("GET", "testXML.xml", false);
-	request.send();
-	var xmlData = request.responseXML;
-	//if no response xml
-	if (!xmlData) {
-		xmlData = (new DOMParser()).parseFromString(request.responseText, "text/xml");
-	}
-	var names = xmlData.getElementsByTagName("denny")[0].childNodes[0].nodeValue;
-	alert(names);
+
 
 }
 
