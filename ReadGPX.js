@@ -15,24 +15,40 @@ function read(gpxFile) {
 		parseGPX(xmlText);
 	} else {
 		//using user file
-		const reader = new FileReader();	
+		const reader = new FileReader();
+		const parser = new DOMParser();	
 		reader.onloadend = function () {
 			text = reader.result;
-			parseGPX(text);
+			//convert result to xml format
+			xmlText = parser.parseFromString(text, "text/xml");
+			parseGPX(xmlText);
 		};
 		reader.readAsText(gpxFile);
 	}
 }
 
 function parseGPX(text) {
-	console.log("done");
+	let parser = new DOMParser();
+	let trk = text.getElementsByTagName("trk")[0];
+	let nameTag = trk.getElementsByTagName("name")[0]; //or childnodes[0]
+	let nameValue = nameTag.firstChild;
+	console.log(nameValue);
+
+	let trkseg = trk.children[2];
+	createWorld();
+}
+
+function createWorld(data) {
+	for each (var dataPacket in trkseg.children) {
+		console.log(dataPacket)
+	}
 }
 
 
-function myFun(callback) {
-	setTimeout(() => {
-		const result = 5;
-		console.log('finished');
-		callback(result);
-	}, 5000);
-}
+// function myFun(callback) {
+// 	setTimeout(() => {
+// 		const result = 5;
+// 		console.log('finished');
+// 		callback(result);
+// 	}, 5000);
+//}
