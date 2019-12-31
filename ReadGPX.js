@@ -35,12 +35,13 @@ function parseGPX(text) {
 	console.log(nameValue);
 
 	let trkseg = trk.children[2];
-	createWorld();
+	createWorld(trkseg);
 }
 
-function createWorld(data) {
-	for each (var dataPacket in trkseg.children) {
-		console.log(dataPacket)
+function createWorld(trkseg) {
+	for (const dataPacket of trkseg.children) {
+		const text = dataPacket.childNodes[0];
+		document.getElementById("print_testing").innerHTML += text + "\r\n";
 	}
 }
 
