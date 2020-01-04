@@ -39,9 +39,16 @@ function parseGPX(text) {
 }
 
 function createWorld(trkseg) {
+	let world = Array();
+	let index = 0;
 	for (const dataPacket of trkseg.children) {
-		const text = dataPacket.childNodes[0];
-		document.getElementById("print_testing").innerHTML += text + "\r\n";
+		const lat = dataPacket.attributes[0].nodeValue;
+		const lon = dataPacket.attributes[0].nodeValue;
+		const elev = dataPacket.children[0].firstChild.nodeValue;
+		const time = dataPacket.children[1].firstChild.nodeValue;
+		world[index] = [lat, lon, elev, time];
+		document.getElementById("print_testing").innerHTML += "<tr><td>"+index + " </td><td>" + lat +" </td><td>"+ lon + " </td><td>" + elev + " </td></tr>";
+		index++;
 	}
 }
 
