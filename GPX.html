@@ -12,10 +12,13 @@
 		<script src="ReadGPX.js"></script> 
 		<h1 style="text-align: center;">GPX Reader</h1>
 		<p>First, Upload File for Input or Use Example:</p>
-		<input id="GPX_file" type="file" onchange="read(this.files[0])"/>
+		<input id="GPX_file" type="file" onchange="read(this.files[0], null)"/>
 		<!-- <p>Or use example file</p> -->
-		<button type="button" onclick="read(null)">
-			use example
+		<button type="button" class="btn btn-secondary" onclick="read(null, '/Lunch_Run_Berk.gpx')">
+			use example (Berkeley)
+		</button>
+		<button type="button" class="btn btn-secondary" onclick="read(null, '/Morning_Run_Mex.gpx')">
+			use example (Mexico City)
 		</button>
 		<br><br>
 		<div style="text-align: center;">
@@ -30,7 +33,7 @@
 		<div id="googleMap", style="text-align:center;width:80%;height:400px;"></div>
 		
  		<script src="WorldGPX.js"></script>
- 		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap"></script>
+ 		<script id = "googleAPI"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap"></script>
 		<!-- end google maps window -->
 		<!-- <table id="print_testing">
 			<tr>

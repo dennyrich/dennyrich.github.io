@@ -1,6 +1,8 @@
-var map;
 var latLons = Array();
 var world = Array();
+var swBound; //southwest bound for map
+var neBound; //northeast 
+var bound; //google maps bound 
 
 function myMap() {
   var mapProp= {
@@ -23,10 +25,12 @@ function drawMap() {
         strokeWeight: 2
 	});
 	path.setMap(map);
+	map.fitBounds(bound);
+	
 }
 //**************************************************************************
-
-function read(gpxFile) {
+//file name is null if file is uploaded
+function read(gpxFile, fileName) {
 	document.getElementById("header").innerHTML = "File Uploaded..."
 	//const gpxFile = document.getElementById("GPX_file").files[0];
 	let text;
@@ -34,7 +38,7 @@ function read(gpxFile) {
 	if (!gpxFile) {
 		//use example file
 		const request = new XMLHttpRequest();
-		request.open('GET', '/Lunch_Run-2.gpx', false);
+		request.open('GET', fileName, false);
 		request.send(null);
 		text = request.responseText;
 		xmlText = request.responseXML;
@@ -53,6 +57,7 @@ function read(gpxFile) {
 	}
 }
 
+//creates data elements from xml (.gpx) doc and calls createWorld
 function parseGPX(text) {
 	let parser = new DOMParser();
 	let trk = text.getElementsByTagName("trk")[0];
@@ -69,16 +74,40 @@ function createWorld(trkseg) {
 	//let world = Array();
 	//let latLons = Array();
 	let index = 0;
+	let currLatLon;
+
+	var southmost = 180;
+	var northmost = -180;
+	var eastmost = -180;
+	var westmost = 180;
+	// swBound = new google.maps.LatLng(180, 180);
+	// neBound = new google.maps.LatLng(-180, -180);
 	for (const dataPacket of trkseg.children) {
 		const lat = dataPacket.attributes[0].nodeValue;
 		const lon = dataPacket.attributes[1].nodeValue;
 		const elev = dataPacket.children[0].firstChild.nodeValue;
 		const time = dataPacket.children[1].firstChild.nodeValue;
 		world[index] = [lat, lon, elev, time]; //.append if not using index
+
 		latLons[index] = new google.maps.LatLng(lat, lon);
+		// var neLat = neBound.lat();
+		// var neLng = neBound.lng();
+		if (lat < southmost) {
+			southmost = lat;
+		} 
+		if (lat > northmost) {
+			northmost = lat;
+		}
+		if (lon < westmost) {
+			westmost = lon;
+		} 
+		if (lon > eastmost) {
+			eastmost = lon;
+		}
 		//document.getElementById("print_testing").innerHTML += "<tr><td>"+index + " </td><td>" + lat +" </td><td>"+ lon + " </td><td>" + elev + " </td></tr>";
 		index++;
 	}
+	bound = new google.maps.LatLngBounds(new google.maps.LatLng(southmost, eastmost), new google.maps.LatLng(northmost, westmost));
 }
 
 
