@@ -15,10 +15,10 @@
 			<p>First, Upload File for Input or Use Example:</p>
 			<input id="GPX_file" type="file" onchange="read(this.files[0], null)"/>
 			<!-- <p>Or use example file</p> -->
-			<button type="button" class="btn btn-secondary" onclick="read(null, '/Lunch_Run_Berk.gpx')">
+			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/Lunch_Run_Berk.gpx')">
 				use example (Berkeley)
 			</button>
-			<button type="button" class="btn btn-secondary" onclick="read(null, '/Morning_Run_Mex.gpx')">
+			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/Morning_Run_Mex.gpx')">
 				use example (Mexico City)
 			</button>
 			<br><br>
@@ -31,7 +31,7 @@
 			<h6 style="text-align:center", id="header">Waiting for File Upload</h6>
 
 			<!-- begin google maps window -->
-			<div id="googleMap", style="text-align:center;width:80%;height:400px;"></div>
+			<div id="googleMap", style="text-align:center;width:100%;height:400px;"></div>
 			<p>
 				About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and 
 				other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map 
