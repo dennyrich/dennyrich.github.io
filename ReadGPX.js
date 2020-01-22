@@ -4,6 +4,7 @@ var swBound; //southwest bound for map
 var neBound; //northeast 
 var bound; //google maps bound 
 var segments = Array();
+var road = Array();
 const HEIGHT = 300; //must change canvas element if change height/width
 const WIDTH = 300;
 
@@ -118,7 +119,6 @@ function createWorld(trkseg) {
 }
 //***************************************************************************** */
 
-//
 class Vector {
 	constructor(x, y) {
 		this.x = x;
@@ -151,9 +151,13 @@ class Polygon {
 	}
 }
 
-// class BillBoard() {
-
-// }
+class sides {
+	constructor(left, right) {
+		this.left = left;
+		this.right = right;
+		this.distToNext = distToNext;
+	}
+}
 function createSegments(world) {
 	var distX;
 	var distY;
@@ -194,13 +198,26 @@ function createSegments(world) {
 		//world = list of [lat, lon, elev, time]
 		segments.push({
 			length : len,
-			curveAmount : curve
-			//changeElev : changeElevScaled
+			curveAmount : curve,
+			draw : function(bLeft, bRight, scale, offset) {
+				//scale should be 1 at bottom and decrease
+				const dWidth = 10;
+				var tLeft = new Vector(bLeft.x + scale * (0.5 * dWidth + this.curveAmount), bLeft.y - scale * this.length);
+				var tLeft = new Vector(bRight.x + scale * (0.5 * -dWidth + this.curveAmount), bRight.y - scale * this.length);
+			}
 		});
 
 		prevVec = currVec;
 	}
 } 
+
+
+function createRoad(segments) {
+	var widths = Array
+	for (const seg in segments) {
+
+	}
+}
 
 //********************************************************************************** */
 function run() {
@@ -213,8 +230,16 @@ function run() {
 
 
 	//testing
-	var p = new Polygon(new Vector(100, HEIGHT), new Vector(200, HEIGHT), new Vector(125, HEIGHT - 100), new Vector(175, HEIGHT - 100));
-	drawPoly(p);
+	// var p = new Polygon(new Vector(100, HEIGHT), new Vector(200, HEIGHT), new Vector(125, HEIGHT - 100), new Vector(175, HEIGHT - 100));
+	// drawPoly(p);
+	notSetUpYet();
+}
+
+function notSetUpYet() {
+	alert("not set up yet")
+	ctx.font = "30px Arial";
+	ctx.fillText("In Development.", 100, 50);
+	ctx.fillText("Come Back Later!", 100, 150);
 }
 
 function frame(polyList, offsetIntoFirst) {
