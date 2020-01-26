@@ -5,8 +5,8 @@ var neBound; //northeast
 var bound; //google maps bound 
 var segments = Array();
 var road = Array();
-const HEIGHT = 300; //must change canvas element if change height/width
-const WIDTH = 300;
+const HEIGHT = 400; //must change canvas element if change height/width
+const WIDTH = 600;
 
 //const canvas = document.getElementById("canvas");
 var ctx;
@@ -134,106 +134,98 @@ class Vector {
 	}
 }
 
-class Polygon {
-	//all Vectors
-	constructor(bLeft, bRight, tLeft, tRight) {
-		this.bLeft = bLeft;
-		this.bRight = bRight;
-		this.tLeft = tLeft;
-		this.tRight = tRight;
-	}
-	getPolyAbove(curve, len, dWidth) {
-		const bLeft = this.tLeft;
-		const bRight = this.tRight;
-		const tLeft = new Vector(this.tLeft.x + dWidth + curve, this.tLeft.y + len);
-		const tRight = new Vector(this.tRight.x - dWidth + curve, this.tRight.y + len);
-		return new Polygon(bLeft, bRight, tLeft, tRight);
-	}
-}
-
-class sides {
-	constructor(left, right) {
-		this.left = left;
-		this.right = right;
-		this.distToNext = distToNext;
-	}
-}
 function createSegments(world) {
-	var distX;
-	var distY;
-	var distElev;
-	var currVec;
-	var prevVec;
-	//var prevDistX = 0;
-	//var prevDistY = 0;
-	var angleFromPrev;
+	var distX, distY, distElev, currVec, angleFromPrev;
 	var prevVec = new Vector(0, 0);
-	const scale = 1000;
+	const scale = 100000;
 	const elevScale = 10;
+	//const curveScale = 3000;
+	
 	//var segPosY = HEIGHT;
+	var dark = true;
 	for (let i = 1; i < world.length; i++) {
 		distX = world[i][0] - world[i - 1][0];
 		distY = world[i][1] - world[i - 1][1];
 		distElev = world[i][2] - world[i - 1][2];
 		currVec = new Vector(distX, distY);
-		//angleFromPrev = Vector.angleBetween();
-
-		var len = scale * currVec.magnitude();
+		//var len = scale * currVec.magnitude();
+		var len = 40; //constant right now
 		angleFromPrev = Vector.angleBetween(currVec, prevVec); //order matters, check sign
-		var curve;
-		if (Math.abs(angleFromPrev) > Math.PI) {
-			curve = 4 * Math.sign(angleFromPrev);
-		} else if (Math.abs(angleFromPrev) > Math.PI / 2) {
-			curve = 3 * Math.sign(angleFromPrev);
-		} else if (Math.abs(angleFromPrev > Math.PI/4)) {
-			curve = 2 * Math.sign(angleFromPrev);
-		} else if (Math.abs(angleFromPrev) > Math.PI/16) {
-			curve = Math.sign(angleFromPrev);
-		} else { //includes NaN when delta x = 0
-			curve = 0;
-		}
-
+		var curveAmount = Math.sin(angleFromPrev) * len * 2; // * 2 to amplify curve		
 		var changeElevScaled = distElev * elevScale;
 		len += changeElevScaled;
+		if (Number.isNaN(curveAmount)) {
+			curveAmount = 0; //division by 0
+		}
 		//world = list of [lat, lon, elev, time]
-		segments.push({
-			length : len,
-			curveAmount : curve,
-			draw : function(bLeft, bRight, scale, offset) {
-				//scale should be 1 at bottom and decrease
-				const dWidth = 10;
-				var tLeft = new Vector(bLeft.x + scale * (0.5 * dWidth + this.curveAmount), bLeft.y - scale * this.length);
-				var tLeft = new Vector(bRight.x + scale * (0.5 * -dWidth + this.curveAmount), bRight.y - scale * this.length);
-			}
-		});
-
+		segments.push({length : len, curve : curveAmount, dark : dark});
 		prevVec = currVec;
+		dark = !dark;
 	}
 } 
-
-
-function createRoad(segments) {
-	var widths = Array
-	for (const seg in segments) {
-
-	}
-}
 
 //********************************************************************************** */
 function run() {
 	const canvas = document.getElementById("canvas");
 	ctx = canvas.getContext('2d');
+	const ddwidth = 5; //const over each road segment
+	var dWidth = 30; //decreases from bottom segment to top segment
+	//var width = WIDTH - dWidth; //start at bottom canvas width
+	var polyList, tLeftX, tRightX;
+	/**
+	 * takes current offset and bottom segment
+	 */
+	function drawWithOffset(offset, bottomIndex) {
+		const bottomSeg = segments[bottomIndex];
+		polyList = Array();
 
+		tLeftX = (dWidth * offset + bottomSeg.curve * offset);
+		tRightX = (WIDTH - dWidth * offset + bottomSeg.curve * offset);
+		let tY = HEIGHT -  bottomSeg.length * offset;
+		
+		polyList.push({
+			bLeft 	: {x : 0, 		y : HEIGHT},
+			bRight  : {x : WIDTH, 	y : HEIGHT},
+			tLeft  	: {x : tLeftX, 	y : tY},
+			tRight	: {x : tRightX,	y : tY}
+		});
+		var bLeftX, bRightX, currSeg, bY;
+		var index = bottomIndex;
+		dWidth -= ddwidth;
+		while(tRightX - tLeftX > 50 && dWidth > 0 && tY > 0 && index < segments.length) {
+			currSeg = segments[index];
+			bLeftX = tLeftX;
+			bRightX = tRightX;
+			bY = tY; //bottomY = topY
 
-	
+			tLeftX += (dWidth + currSeg.curve);
+			tRightX += (-dWidth + currSeg.curve);
+			tY -= currSeg.length;
+			polyList.push({
+				bLeft 	: {x : bLeftX, 	y : bY},
+				bRight  : {x : bRightX, y : bY},
+				tLeft  	: {x : tLeftX, 	y : tY},
+				tRight	: {x : tRightX,	y : tY},
+				dark	: currSeg.dark
+			});
+			index++;
+			dWidth -= ddwidth;
+		}
+		frame(polyList, tY);
+		dWidth = 60;
+		if (offset > 0.1) { //0.25 accounts for fp errors
+			 setTimeout(drawWithOffset, 50, offset - 0.1, bottomIndex);
+		} else {
+			//reset offset to 1, increment bottom index
+			setTimeout(drawWithOffset, 50, 1, bottomIndex + 1); 
+		}
+	} 
+	drawWithOffset(1, 1); //start width index at 1, offset at 1
+	//notSetUpYet();
 
-
-
-	//testing
-	// var p = new Polygon(new Vector(100, HEIGHT), new Vector(200, HEIGHT), new Vector(125, HEIGHT - 100), new Vector(175, HEIGHT - 100));
-	// drawPoly(p);
-	notSetUpYet();
 }
+
+
 
 function notSetUpYet() {
 	alert("not set up yet")
@@ -242,13 +234,23 @@ function notSetUpYet() {
 	ctx.fillText("Come Back Later!", 100, 150);
 }
 
-function frame(polyList, offsetIntoFirst) {
-	for (const p in polyList) {
-		drawPoly(p);
+function frame(polyList, topMost) {
+	ctx.clearRect(0, 0, WIDTH, HEIGHT);
+	ctx.fillStyle = "Green";
+	ctx.fillRect(0, topMost, WIDTH, HEIGHT - topMost);
+	var s = polyList[0];
+	var color;
+	for (let i = 0; i < polyList.length; i++) {
+		if (polyList[i].dark){
+			color = "black";
+		} else {
+			color = "grey";
+		}
+		drawPoly(polyList[i], color);
 	}
 }
 
-function drawPoly(polygon) {
+function drawPoly(polygon, color) {
 	const bRight = polygon.bRight;
 	const bLeft = polygon.bLeft;
 	const tRight = polygon.tRight;
@@ -259,11 +261,7 @@ function drawPoly(polygon) {
 	ctx.lineTo(tLeft.x, tLeft.y);
 	ctx.lineTo(tRight.x, tRight.y);
 	ctx.lineTo(bRight.x, bRight.y);
+	ctx.fillStyle = color;
 	ctx.fill();
 }
-//*************************************************** */
-
-function runner() {
-
-
-}
+//*************************************************** ****** ****** */
