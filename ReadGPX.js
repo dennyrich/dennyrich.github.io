@@ -190,7 +190,7 @@ function run() {
 		var marker = new google.maps.Marker({
 			position: new google.maps.LatLng(bottomSeg.x,bottomSeg.y),
 			map: map,
-			icon : "images/ant_freeze.gif"
+			icon : {url : "/images/ant_freeze.gif", scaledSize : new google.maps.Size(30, 30)}
 		  });
 		  
 		  setTimeout(function() {marker.setMap(null)}, 100);
