@@ -5,8 +5,13 @@ var path; //google maps object
 var map;
 var segments = Array();
 var road = Array();
-const HEIGHT = 400; //must change canvas element if change height/width
-const WIDTH = 600;
+var HEIGHT = document.getElementById("canvas").height; 
+var WIDTH = document.getElementById("canvas").width;
+var runner;
+
+const MAX_CURVE = 100;
+
+var clouds = Array();
 
 //const canvas = document.getElementById("canvas");
 var ctx;
@@ -44,6 +49,7 @@ function drawMap() {
 //**************************************************************************/
 //file name is null if file is uploaded
 function read(gpxFile, fileName) {
+	createClouds();
 	//const gpxFile = document.getElementById("GPX_file").files[0];
 	let text, xmlText;
 	if (!gpxFile) {
@@ -134,11 +140,11 @@ class Vector {
 	}
 }
 
+const LEN = 60; //length per segment w/o elevation change
 function createSegments(world) {
-	var distX, distY, distElev, currVec, angleFromPrev;
+	var distX, distY, distElev, currVec, angleFromPrev, roadObject;
 	var prevVec = new Vector(0, 0);
-	const scale = 100000;
-	const elevScale = 10;
+	const ELEV_SCALE = 15;
 	//const curveScale = 3000;
 	
 	//var segPosY = HEIGHT;
@@ -149,17 +155,27 @@ function createSegments(world) {
 		distElev = world[i][2] - world[i - 1][2];
 		currVec = new Vector(distX, distY);
 		//var len = scale * currVec.magnitude();
-		var len = 40; //constant right now
 		angleFromPrev = Vector.angleBetween(prevVec, currVec); //order matters, check sign
-		var curveAmount = Math.sin(angleFromPrev) * len * 3; // * 2 to amplify curve		
-		var changeElevScaled = distElev * elevScale;
+		var curveAmount = Math.sin(angleFromPrev) * len * 2; // * 2 to amplify curve		
+		var changeElevScaled = distElev * ELEV_SCALE;
+		var len = LEN;
 		len += changeElevScaled;
 		if (Number.isNaN(curveAmount)) {
 			curveAmount = 0; //division by 0
 		}
 		//world = list of [lat, lon, elev, time]
+
+		if (i % 7 == 0) {
+			roadObject = {name : "flower", onLeft : false, size3 : 2}
+		} else if (i % 5 == 0) {
+			roadObject = {name : "flower" , onLeft : true, size3 : 1}
+		} else {roadObject = null;}
+
 		segments.push({length : len, curve : curveAmount, dark : dark, 
-							x : world[i][0], y : world[i][1]});
+							x 			: world[i][0], y : world[i][1],
+							roadObject 	: roadObject,
+							angle		: Math.atan(distY, distX)
+						});
 		prevVec = currVec;
 		dark = !dark;
 	}
@@ -167,17 +183,22 @@ function createSegments(world) {
 
 //********************************************************************************** */
 function run() {
+	runner = new Person();
+	if (latLons.length == 0) {
+		alert("no file uploaded or has incorrect data");
+		return;
+	}
 	drawMap();
 	const canvas = document.getElementById("canvas");
 	ctx = canvas.getContext('2d');
-	const ddwidth = 5; //const over each road segment
-	var dWidth = 30; //decreases from bottom segment to top segment
-	//var width = WIDTH - dWidth; //start at bottom canvas width
+	const DWIDTH_START = 160;
+	const ddwidth = 35; //const over each road segment
+	var dWidth = DWIDTH_START; //decreases from bottom segment to top segment
 	var polyList, tLeftX, tRightX;
 	/**
 	 * takes current offset and bottom segment
 	 */
-	function drawWithOffset(offset, bottomIndex, prevTopMost, prevMarker) {
+	function drawWithOffset(offset, bottomIndex, prevTopMost) {
 		const bottomSeg = segments[bottomIndex];
 		polyList = Array();
 
@@ -200,13 +221,14 @@ function run() {
 			bRight  : {x : WIDTH, 	y : HEIGHT},
 			tLeft  	: {x : tLeftX, 	y : tY},
 			tRight	: {x : tRightX,	y : tY},
-			dark 	: bottomSeg.dark
+			dark 	: bottomSeg.dark,
+			roadObject : bottomSeg.roadObject
 		});
 		var bLeftX, bRightX, currSeg, bY;
-		var index = bottomIndex;
-		var heightDecr = 2;
+		var index = bottomIndex + 1;
+		var heightDecr = 0;
 		dWidth -= ddwidth;
-		while(tRightX - tLeftX > 50 && dWidth > 0 && tY > 0 && index < segments.length) {
+		while(tRightX - tLeftX > dWidth * 2 && dWidth > 0 && tY > 0 && index < segments.length) {
 			currSeg = segments[index];
 			bLeftX = tLeftX;
 			bRightX = tRightX;
@@ -214,7 +236,7 @@ function run() {
 
 			tLeftX += (dWidth + currSeg.curve);
 			tRightX += (-dWidth + currSeg.curve);
-			tY -= currSeg.length + heightDecr;
+			tY -= (currSeg.length - heightDecr);
 			if (tY < prevTopMost) {
 				tY = prevTopMost;
 				index = segments.length; //to break after this loop
@@ -224,22 +246,28 @@ function run() {
 				bRight  : {x : bRightX, y : bY},
 				tLeft  	: {x : tLeftX, 	y : tY},
 				tRight	: {x : tRightX,	y : tY},
-				dark	: currSeg.dark
+				dark	: currSeg.dark,
+				roadObject : currSeg.roadObject
 			});
 			index++;
 			dWidth -= ddwidth;
-			heightDecr += 4;
+			heightDecr += 10;
+			if (heightDecr > currSeg.length) {
+				break;
+			}
 		}
 		if (prevTopMost != -1) {
 			tY = prevTopMost;
 		}
+
 		frame(polyList, tY - 15); //-10 to top Y so it covers road
-		dWidth = 60;
+		runner.updateState();
+		dWidth = DWIDTH_START;
 		if (offset > 0.01) { //0.25 accounts for fp errors
-			 setTimeout(drawWithOffset, 10, offset - 0.05, bottomIndex, tY, marker); 
+			 setTimeout(drawWithOffset, 9, offset - 0.03, bottomIndex, tY, marker); 
 		} else {
 			//reset offset to 1, increment bottom index, -1 means topMost won't be used
-			setTimeout(drawWithOffset, 10, 1, bottomIndex + 1, -1, marker); 
+			setTimeout(drawWithOffset, 9, 1, bottomIndex + 1, -1, marker); 
 		}
 	} 
 	drawWithOffset(1, 1, -1); //start width index at 1, offset at 1
@@ -249,17 +277,26 @@ function run() {
 
 
 
-function notSetUpYet() {
-	alert("not set up yet")
-	ctx.font = "30px Arial";
-	ctx.fillText("In Development.", 100, 50);
-	ctx.fillText("Come Back Later!", 100, 150);
-}
+// function notSetUpYet() {
+// 	alert("not set up yet")
+// 	ctx.font = "30px Arial";
+// 	ctx.fillText("In Development.", 100, 50);
+// 	ctx.fillText("Come Back Later!", 100, 150);
+// }
 
 function frame(polyList, topMost) {
+	//not used now
+	const flower = document.getElementById("flower");
+	const fWidth = document.getElementById("flower").width;
+	const fHeight = document.getElementById("flower").height;
+	var dim, img, width, height;
+	// end not used now
+
 	ctx.clearRect(0, 0, WIDTH, HEIGHT);
 	ctx.fillStyle = "Green";
 	ctx.fillRect(0, topMost, WIDTH, HEIGHT - topMost);
+	ctx.fillStyle = "Blue";
+	ctx.fillRect(0, 0, WIDTH, topMost);
 	var s = polyList[0];
 	var color;
 	for (let i = 0; i < polyList.length; i++) {
@@ -269,7 +306,26 @@ function frame(polyList, topMost) {
 			color = "grey";
 		}
 		drawPoly(polyList[i], color);
+		//for objects on road
+		// roadObject = polyList[i].roadObject;
+		// if (roadObject) {
+		// 	if (roadObject.name == "flower") {
+		// 		img = flower;
+		// 		dim = flower.height;
+		// 		width = fWidth;
+		// 		height = fHeight;
+		// 	} 
+		// 	var x;
+		// 	if (roadObject.onLeft) {
+		// 		x = polyList[i].bLeft.x - width - 100;
+		// 	} else {
+		// 		x = polyList[i].bRight.x + 100;
+		// 	}
+		// 	var y = polyList[i].bLeft.y + height;
+		// 	drawRoadObject(img, {x : x, y : y}, dim);
+		// }
 	}
+	runner.draw();
 }
 
 function drawPoly(polygon, color) {
@@ -286,4 +342,68 @@ function drawPoly(polygon, color) {
 	ctx.fillStyle = color;
 	ctx.fill();
 }
+function drawRoadObject(img, base, dim) {
+	ctx.drawImage(img, base.x, base.y, dim, dim);
+}
 //*************************************************** ****** ****** */
+function createClouds() {
+	for (let i = 0; i < 20; i++) {
+		clouds.push({
+			size : Math.random() * 100 + 10,
+			angle : 18 * i // goes from 0 to 360
+		});
+	}
+}
+class Person {
+	constructor() {
+		this.state = 0;
+		this.jumpHeight = 0;
+		this.wayUp = true;
+		this.armDown = 60;
+	}
+	draw() {
+		const shirtHeight = 100;
+		const shirtWidth = 80;
+		const headRadius = 40;
+		const armOut = 30;
+		const armTop = HEIGHT - shirtHeight - this.state;
+		ctx.fillStyle = 'Crimson';
+		ctx.fillRect(WIDTH / 2 - shirtWidth / 2, armTop, shirtWidth, shirtHeight);
+		ctx.fillStyle = 'BurlyWood';
+		ctx.beginPath();
+		ctx.arc(WIDTH / 2, HEIGHT - shirtHeight - headRadius - this.state, headRadius, 0, Math.PI * 2 );
+		ctx.fill();
+		//legs
+		ctx.fillStyle = 'ForestGreen';
+		ctx.fillRect(WIDTH/2 - shirtWidth/2, HEIGHT - this.state, shirtWidth, this.state);
+		//left
+		ctx.strokeStyle = "BurlyWood";
+		ctx.beginPath();
+		ctx.lineWidth = 15;
+		ctx.moveTo(WIDTH/2 - shirtWidth/2, armTop);
+		ctx.lineTo(WIDTH/2 - shirtWidth/2 - armOut, armTop + this.armDown + 10);
+		ctx.stroke();
+		//right
+		ctx.beginPath();
+		ctx.moveTo(WIDTH/2 + shirtWidth/2, armTop);
+		//					right arm height is "inverse" of left, 10 is a constant added 
+		ctx.lineTo(WIDTH/2 + shirtWidth/2 + armOut, armTop + (60 - this.armDown) + 10);
+		ctx.stroke();
+	}
+	updateState() {
+		if (this.wayUp) {
+			this.state += 1;
+			this.armDown -= 4;
+			if (this.state >= 15) {
+				this.wayUp = false;
+			}
+		} else {
+			this.state -= 1;
+			this.armDown += 4;
+			if (this.state <= 0) {
+				this.wayUp = true;
+			}
+		}
+	}
+	
+}
