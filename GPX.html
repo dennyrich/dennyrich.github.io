@@ -9,10 +9,10 @@
 	<body>
 		<div id="nav_placeholder"></div>
 		<script src="nav.js"></script>
-		<script src="ReadGPX.js"></script> 
 		<div style="margin: 0px 150px;">
 			<h1 style="text-align: center;">GPX Reader</h1>
 			<p>First, Upload File for Input or Use Example:</p>
+			<p>Then, press "Draw Map" to display path or "Run" to simulate the activity.</p>
 			<input id="GPX_file" type="file" onchange="read(this.files[0], null)"/>
 			<!-- <p>Or use example file</p> -->
 			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/Lunch_Run_Berk.gpx')">
@@ -34,7 +34,11 @@
 			<div id="googleMap", style="text-align:center;width:100%;height:400px;"></div>
 			<br>
 			<!-- if change width or height, change WIDTH and HEIGHT in js -->
-			<canvas id='canvas' width='600' height='400' style="border:5px solid #eb0d0d;"></canvas>
+			<canvas id='canvas' width='800' height='600' style="border:5px solid #eb0d0d;"></canvas>
+			<div style="display:none;">
+				<img id="flower" src="/images/flower.ico"width="50" height="50">
+				<img id="tree" src = "/images/tree.png" width ="200" height="200">
+			</div>
 			<p>
 				About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and 
 				other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map 
@@ -42,7 +46,8 @@
 			</p>
 		</div>
 		
- 		<script src="WorldGPX.js"></script>
+		 <script src="WorldGPX.js"></script>
+		 <script src="ReadGPX.js"></script> 
  		<script id = "googleAPI"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap"></script>
 		<!-- end google maps window -->
 		<!-- <table id="print_testing">
