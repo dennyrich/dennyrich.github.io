@@ -15,11 +15,14 @@
 			<p>Then, press "Draw Map" to display path or "Run" to simulate the activity.</p>
 			<input id="GPX_file" type="file" onchange="read(this.files[0], null)"/>
 			<!-- <p>Or use example file</p> -->
-			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/Lunch_Run_Berk.gpx')">
+			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/Lunch_Run_Berk.gpx')">
 				use example (Berkeley)
 			</button>
-			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/Morning_Run_Mex.gpx')">
+			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/Morning_Run_Mex.gpx')">
 				use example (Mexico City)
+			</button>
+			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/circle_run_five_speed.gpx')">
+				use example (Track)
 			</button>
 			<br><br>
 			<div style="text-align: center;">

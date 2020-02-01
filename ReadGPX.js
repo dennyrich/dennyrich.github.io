@@ -4,12 +4,13 @@ var swBound, neBound, bound; //sw, ne, and google maps object bound
 var path; //google maps object
 var map;
 var segments = Array();
-var road = Array();
 var HEIGHT = document.getElementById("canvas").height; 
 var WIDTH = document.getElementById("canvas").width;
-var runner;
 
-const MAX_CURVE = 100;
+const SCALE = 70000;
+const MIN_LEN = 20;
+const ELEV_SCALE = 5;
+const CURVE_MAGNIFY = 2;
 
 var clouds = Array();
 
@@ -103,9 +104,12 @@ function createWorld(trkseg) {
 		const lon = dataPacket.attributes[1].nodeValue;
 		const elev = dataPacket.children[0].firstChild.nodeValue;
 		const time = dataPacket.children[1].firstChild.nodeValue;
-		world[index] = [lat, lon, elev, time]; //.append if not using index
+		
+		world.push([lat, lon, elev, time]); 
+	
+		
 
-		latLons[index] = new google.maps.LatLng(lat, lon);
+		latLons.push(new google.maps.LatLng(lat, lon));
 		// var neLat = neBound.lat();
 		// var neLng = neBound.lng();
 		if (lat < southmost) {
@@ -120,7 +124,6 @@ function createWorld(trkseg) {
 		if (lon > eastmost) {
 			eastmost = lon;
 		}
-		index++;
 	}
 	bound = new google.maps.LatLngBounds(new google.maps.LatLng(southmost, eastmost), new google.maps.LatLng(northmost, westmost));
 	createSegments(world);
@@ -140,50 +143,53 @@ class Vector {
 	}
 }
 
-const LEN = 60; //length per segment w/o elevation change
+
 function createSegments(world) {
 	var distX, distY, distElev, currVec, angleFromPrev, roadObject;
 	var prevVec = new Vector(0, 0);
-	const ELEV_SCALE = 15;
-	//const curveScale = 3000;
 	
-	//var segPosY = HEIGHT;
 	var dark = true;
+	const LEN = 60;
+	var angle = 0;
+	var len = 0;
+	var changeElevScaled = 0;
 	for (let i = 1; i < world.length; i++) {
+	
 		distX = world[i][0] - world[i - 1][0];
 		distY = world[i][1] - world[i - 1][1];
 		distElev = world[i][2] - world[i - 1][2];
 		currVec = new Vector(distX, distY);
-		//var len = scale * currVec.magnitude();
 		angleFromPrev = Vector.angleBetween(prevVec, currVec); //order matters, check sign
-		var curveAmount = Math.sin(angleFromPrev) * len * 2; // * 2 to amplify curve		
-		var changeElevScaled = distElev * ELEV_SCALE;
-		var len = LEN;
-		len += changeElevScaled;
-		if (Number.isNaN(curveAmount)) {
-			curveAmount = 0; //division by 0
+		 // * 2 to amplify curve		
+		changeElevScaled += distElev * ELEV_SCALE;
+		len += currVec.magnitude() * SCALE;
+		if (Number.isNaN(angleFromPrev)) {
+			angleFromPrev = 0; //division by 0
 		}
+		angle += angleFromPrev;
+		if (len < LEN / 3) {
+			continue;
+		}
+		var curveAmount = Math.sin(angle) * LEN * CURVE_MAGNIFY;
 		//world = list of [lat, lon, elev, time]
 
-		if (i % 7 == 0) {
-			roadObject = {name : "flower", onLeft : false, size3 : 2}
-		} else if (i % 5 == 0) {
-			roadObject = {name : "flower" , onLeft : true, size3 : 1}
-		} else {roadObject = null;}
-
-		segments.push({length : len, curve : curveAmount, dark : dark, 
+		segments.push({length : LEN + changeElevScaled, curve : curveAmount, dark : dark, 
 							x 			: world[i][0], y : world[i][1],
 							roadObject 	: roadObject,
 							angle		: Math.atan(distY, distX)
 						});
 		prevVec = currVec;
 		dark = !dark;
+		curveAmount = 0;
+		len = 0;
+		angle = 0;
+		changeElevScaled = 0;
 	}
 } 
 
 //********************************************************************************** */
 function run() {
-	runner = new Person();
+	var runner = new Person();
 	if (latLons.length == 0) {
 		alert("no file uploaded or has incorrect data");
 		return;
@@ -260,7 +266,7 @@ function run() {
 			tY = prevTopMost;
 		}
 
-		frame(polyList, tY - 15); //-10 to top Y so it covers road
+		frame(polyList, tY - 15, runner); //-10 to top Y so it covers road
 		runner.updateState();
 		dWidth = DWIDTH_START;
 		if (offset > 0.01) { //0.25 accounts for fp errors
@@ -284,7 +290,7 @@ function run() {
 // 	ctx.fillText("Come Back Later!", 100, 150);
 // }
 
-function frame(polyList, topMost) {
+function frame(polyList, topMost, runner) {
 	//not used now
 	const flower = document.getElementById("flower");
 	const fWidth = document.getElementById("flower").width;
@@ -359,6 +365,7 @@ class Person {
 		this.state = 0;
 		this.jumpHeight = 0;
 		this.wayUp = true;
+		this.armSwing = true;
 		this.armDown = 60;
 	}
 	draw() {
@@ -391,19 +398,68 @@ class Person {
 		ctx.stroke();
 	}
 	updateState() {
+		if (this.armSwing) {
+			this.armDown -= 2;
+			if (this.armDown <= 0) {
+				this.armSwing = false;
+			}
+		} else {
+			this.armDown += 2;
+			if (this.armDown >= 60) {
+				this.armSwing = true;
+			}
+		}
+
 		if (this.wayUp) {
 			this.state += 1;
-			this.armDown -= 4;
 			if (this.state >= 15) {
 				this.wayUp = false;
 			}
 		} else {
 			this.state -= 1;
-			this.armDown += 4;
 			if (this.state <= 0) {
 				this.wayUp = true;
 			}
 		}
 	}
 	
+}
+
+//**************************************************** */
+const DIST = 20;
+/**
+ * returns points with distance apart DIST on spline 
+ */
+function spline(a, b, c) {
+	if (!isFunction(a, b, c)) {
+		transpose([a, b, c]);
+	}
+	var denom1 = (a.x - b.x) * (a.x - c.x);
+	var denom2 = (b.x - a.x) * (b.x - c.x);
+	var denom3 = (c.x - a.x) * (c.x - b.x);
+	//num = (x - x[j]) * y[i] for j != i
+	var num1 = function (inputX) {
+			return (inputX - b.x) * (inputX - c.x) * a.y;
+	}
+	var num2 = function (inputX) {
+		return (inputX - a.x) * (inputX - c.x) * b.y;
+	}
+	var num3 = function (inputX) {
+		return (inputX - a.x) * (inputX - b.x) * c.y;
+	}
+	var points = Array();
+	var currX = a.x;
+	
+	//to be continued
+}
+
+function isFunction(a, b, c) {
+	return (a.x < b.x && b.x < c.x) || (c.x < b.x && b.x < a.x);
+}
+function transpose(points) {
+	for (const p in points) {
+		var temp = p.x;
+		p.x = p.y;
+		p.y = temp;
+	}
 }
