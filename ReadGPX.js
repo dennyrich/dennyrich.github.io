@@ -376,7 +376,7 @@ class Person {
 		const armTop = HEIGHT - shirtHeight - this.state;
 		ctx.fillStyle = 'Crimson';
 		ctx.fillRect(WIDTH / 2 - shirtWidth / 2, armTop, shirtWidth, shirtHeight);
-		ctx.fillStyle = 'BurlyWood';
+		ctx.fillStyle = 'DimGrey';
 		ctx.beginPath();
 		ctx.arc(WIDTH / 2, HEIGHT - shirtHeight - headRadius - this.state, headRadius, 0, Math.PI * 2 );
 		ctx.fill();
@@ -384,7 +384,7 @@ class Person {
 		ctx.fillStyle = 'ForestGreen';
 		ctx.fillRect(WIDTH/2 - shirtWidth/2, HEIGHT - this.state, shirtWidth, this.state);
 		//left
-		ctx.strokeStyle = "BurlyWood";
+		ctx.strokeStyle = "DimGrey";
 		ctx.beginPath();
 		ctx.lineWidth = 15;
 		ctx.moveTo(WIDTH/2 - shirtWidth/2, armTop);
