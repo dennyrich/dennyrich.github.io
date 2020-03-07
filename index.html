@@ -1,30 +1,40 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta http-equiv="Cache-control" content="no-cache">
-    <meta charset="UTF-8" />
-    <title>Denny Rich</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-  </head>
-  <body>
-    <div id="nav_placeholder"></div>
-    <div style="text-align: center">
-      <h1>Denny Rich</h1>
-      <h4>UC Berkeley Class of 2022</h4>
-      <h5>San Francisco Bay Area, Ca</h5>
-    </div>
-    <div style="margin: 0px 150px;">
-      <div id=home_links style="text-align: center;">
-        <ul>
-        <a href="https://github.com/dennyrich?tab=repositories" class="badge badge-primary">GitHub</a>
-        <a href="https://www.linkedin.com/in/dennisrich" class="badge badge-primary">LinkedIn</a><br>
-        </ul>
-      </div>
-      <p style="text-align: center;">
-        Hello, I'm Denny. I am studying computer science at UC Berkeley. I enjoy running, hiking, and sports.
-    </div>
-    <div style="text-align: center;"><img src="images/IMG_5951.jpg" class = "rounded-circle" width="142px" height="189px"></div>
-    <script src="nav.js"></script>
-  </body>
-</html>
 
+<head>
+  <meta http-equiv="Cache-control" content="no-cache">
+  <meta charset="UTF-8" />
+  <title>Denny Rich</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+  <div id="nav_placeholder"></div>
+  <canvas id='canvasHome' height="100"
+    style=" width:100%; height: 200px; border:5px solid #805cd4;"></canvas>
+  <div id="header" style="text-align: center;">
+    <button type="button" class="btn btn-outline-danger"onclick="stopAnimation();">Stop Animation</button>
+    <br>
+    <h1>Denny Rich</h1>
+    <h4>UC Berkeley Class of 2022</h4>
+    <h5>San Francisco Bay Area, Ca</h5>
+    <ul>
+      <a href="https://github.com/dennyrich?tab=repositories" class="badge badge-primary">GitHub</a>
+      <a href="https://www.linkedin.com/in/dennisrich" class="badge badge-primary">LinkedIn</a><br>
+    </ul>
+  </div>
+  <!--  -->
+  <br>
+  <p id="paragraph" style="text-align: center; text-align: center;">
+    Hello, I'm Denny. I am studying computer science at UC Berkeley. I enjoy running, hiking, and sports.
+  </p>
+
+  <div id="photo" style="text-align: center;"><img src="images/IMG_5951.jpg" class="rounded-circle" width="142px"
+      height="189px"></div>
+  <script src="nav.js"></script>
+  <script src="home.js"></script>
+
+  <body onload=" var start = 2000; requestAnimationFrame(pulse);"></body>
+
+</html>
