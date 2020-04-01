@@ -44,8 +44,7 @@ var continueAnimation = true;
 for (let i = 0; i < NUM_ROWS; i++) {
     rects[i] = Array();
     for (let j = 0; j < NUM_COLS; j++) {
-        const neverMarked = false;//(j >= leftUnmarked && j <= rightUnmarked && i >= topUnmarked && i <= bottomUnmarked)
-                            //|| (j >= l && j <= r && i >= t && i <= b);
+        const neverMarked = false;
         rects[i].push({
             x : j * sqLen,
             y : i * sqLen,
@@ -61,9 +60,7 @@ for (let i = 0; i < NUM_ROWS; i++) {
 function drawHello(x, y) {
     const letterHeight = 10; //squares
     const letterWidth = 4;
-    // | |  |   |   |   || (vertical lines only)
-    // H    E   L   L   O
-    //              |       |    
+    
     const letters = [
         {verticals : [0, letterWidth], horizontals : [letterHeight / 2]}, //H
         {verticals : [letterWidth + 2], horizontals : [0, letterHeight / 2, letterHeight - 1]}, //E
@@ -107,7 +104,7 @@ function fillAndMark(rect) {
 }
 
 
-ctx.fillStyle = "blue";
+// ctx.fillStyle = "blue";
 var start = rects[10][10]; //change to random
 start.marked = true;
 var wave = Array();
@@ -117,19 +114,40 @@ wave.push(BREAK_POINT);
 
 var startTime;
 
-function pulse() {
+function begin() {
+    requestAnimationFrame(function() {pulse(0)});
+}
+
+var colors = [
+    "#EFF8FB",
+    "#EFF8FB",
+    "#CEECF5",
+    "#A9E2F3",
+    "#81DAF5",
+    "#58D3F7",
+    "#2ECCFA",
+    "#00BFFF",
+];
+
+function pulse(colorIndex) {
     if (!continueAnimation) {
         return;
     }
     startTime = startTime || Date.now();
     if (Date.now() - startTime < FPSinverse) {
-        requestAnimationFrame(pulse);
+        requestAnimationFrame(function() {pulse(colorIndex)});
         return;
     }
     while (wave.length > 0 && wave[0].x != BREAK_POINT.x) {
         var curr = wave.shift();
         addNeighborsToQueue(curr);
-        strokeAndFill(curr);
+        var index;
+        if (colorIndex > colors.length) {
+            index = 2 * colors.length - colorIndex;
+        } else {
+            index = colorIndex;
+        }
+        strokeAndFill(curr, colors[index]);
 
     }
     // adds all neighbors of everything in queue and then a breakpoint
@@ -139,11 +157,11 @@ function pulse() {
     if (wave.length == 1) {
         requestAnimationFrame( finish);
         const probe = rects[19][59];
-        strokeAndFill(probe);
+        strokeAndFill(probe, "red");
         return;
     }
     startTime = 0; //so that it re
-    requestAnimationFrame(pulse);
+    requestAnimationFrame(function() {pulse((colorIndex + 1) % (colors.length * 2))});
 }
 
 function addNeighborsToQueue(currPos) {
@@ -174,7 +192,7 @@ function addNeighborsToQueue(currPos) {
     }
 }
 
-function strokeAndFill(rect, color = "cyan") {
+function strokeAndFill(rect, color) {
     if (!continueAnimation) {
         return;
     }
@@ -206,13 +224,13 @@ function finish() {
             }
         }
     }
-    ctx.fillStyle = "blue";
+    //ctx.fillStyle = "blue";
     var start = setStart(); //change to random
     start.marked = true;
     wave = Array();
     wave.push(start);
     wave.push(BREAK_POINT);
-    requestAnimationFrame(pulse);
+    requestAnimationFrame(function() {pulse(0)});
 }
 
 function stopAnimation() {
