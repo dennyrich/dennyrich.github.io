@@ -430,6 +430,7 @@ const DIST = 20;
 /**
  * returns points with distance apart DIST on spline 
  */
+
 function spline(a, b, c) {
 	if (!isFunction(a, b, c)) {
 		transpose([a, b, c]);
@@ -451,6 +452,7 @@ function spline(a, b, c) {
 	var currX = a.x;
 	
 	//to be continued
+	//while there is a to get a name in rock and roll is to be there the whole time, and not know for when
 }
 
 function isFunction(a, b, c) {
