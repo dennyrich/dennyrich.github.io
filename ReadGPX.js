@@ -15,7 +15,13 @@ const CURVE_MAGNIFY = 2;
 var clouds = Array();
 
 //const canvas = document.getElementById("canvas");
-var ctx;
+const canvas = document.getElementById("canvas");
+var	ctx = canvas.getContext('2d');
+//draw initial display
+ctx.font = "30px Arial";
+ctx.fillStyle = "red";
+ctx.textAlign = "center";
+ctx.fillText("Simulation Displayed Here; Click \"run\" when ready.", canvas.width/2, canvas.height/2);
 
 function myMap() {
   var mapProp= {
@@ -195,8 +201,7 @@ function run() {
 		return;
 	}
 	drawMap();
-	const canvas = document.getElementById("canvas");
-	ctx = canvas.getContext('2d');
+	
 	const DWIDTH_START = 160;
 	const ddwidth = 35; //const over each road segment
 	var dWidth = DWIDTH_START; //decreases from bottom segment to top segment

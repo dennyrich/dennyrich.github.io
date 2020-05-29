@@ -11,10 +11,10 @@
 		<script src="nav.js"></script>
 		<div style="margin: 0px 150px;">
 			<h1 style="text-align: center;">GPX Reader</h1>
-			<p>First, Upload File for Input or Use Example:</p>
-			<p>Then, press "Draw Map" to display path or "Run" to simulate the activity.</p>
-			<input id="GPX_file" type="file" onchange="read(this.files[0], null)"/>
+			<p>First, upload File for input or press "Use Example". Then, press "Draw Map" to display path or "Run" to simulate the activity.</p>
+			<input id="GPX_file" type="file" onchange="read(this.files[0], null)"/><br>
 			<!-- <p>Or use example file</p> -->
+			<div style="text-align: center;">
 			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/Lunch_Run_Berk.gpx')">
 				use example (Berkeley)
 			</button>
@@ -24,6 +24,7 @@
 			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/circle_run_five_speed.gpx')">
 				use example (Track)
 			</button>
+			</div>
 			<br><br>
 			<div style="text-align: center;">
 				<button type="button", class="btn btn-outline-primary", onclick="drawMap(latLons)">Draw Map</button>
