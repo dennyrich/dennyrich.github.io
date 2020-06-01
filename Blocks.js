@@ -89,6 +89,10 @@ class Sys {
     static dot2D(v1, v2) {
         return v1[0] * v2[0] + v1[1] * v2[1];
     }
+    static add2D(v1, v2) {
+        return [v1[0] + v2[0], v1[1] + v2[1]];
+    }
+    
 
 
 }
