@@ -29,29 +29,35 @@
 			<div style="text-align: center;">
 				<button type="button", class="btn btn-outline-primary", onclick="drawMap(latLons)">Draw Map</button>
 				<button type="button", class="btn btn-outline-success", onclick="run();">Run</button>
+				<button type="button", class="btn btn-outline-danger", onclick = "stop();">Stop</button>
 			</div>
-			
+
 			<!-- load reader file first -->
 			<h6 style="text-align:center", id="header">Waiting for File Upload (No File Uploaded)</h6>
 
 			<!-- begin google maps window -->
-			<div id="googleMap", style="text-align:center;width:100%;height:400px;"></div>
-			<br>
-			<!-- if change width or height, change WIDTH and HEIGHT in js -->
+			<div id="googleMap"></div>
 			<div style="text-align: center;"><canvas id='canvas' width='800' height='600' style="border:5px solid #eb0d0d;"></canvas></div>
 			<div style="display:none;">
 				<img id="flower" src="/images/flower.ico"width="50" height="50">
 				<img id="tree" src = "/images/tree.png" width ="200" height="200">
 			</div>
+			<style>
+					#googleMap {
+ 							width: 800px;
+							height: 400px;
+ 							margin:auto;
+					}
+			</style>
 			<p>
-				About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and 
-				other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map 
-				and virtual recap of the run. 
+				About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and
+				other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map
+				and virtual recap of the run.
 			</p>
 		</div>
-		
+
 		 <script src="WorldGPX.js"></script>
-		 <script src="ReadGPX.js"></script> 
+		 <script src="ReadGPX.js"></script>
  		<script id = "googleAPI"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap"></script>
 		<!-- end google maps window -->
 		<!-- <table id="print_testing">

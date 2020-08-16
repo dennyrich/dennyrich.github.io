@@ -3,8 +3,9 @@ var world = Array();
 var swBound, neBound, bound; //sw, ne, and google maps object bound
 var path; //google maps object
 var map;
+var cont = true;
 var segments = Array();
-var HEIGHT = document.getElementById("canvas").height; 
+var HEIGHT = document.getElementById("canvas").height;
 var WIDTH = document.getElementById("canvas").width;
 
 const SCALE = 70000;
@@ -51,7 +52,7 @@ function drawMap() {
 	});
 	path.setMap(map);
 	map.fitBounds(bound);
-	
+
 }
 //**************************************************************************/
 //file name is null if file is uploaded
@@ -70,7 +71,7 @@ function read(gpxFile, fileName) {
 	} else {
 		//using user file
 		const reader = new FileReader();
-		const parser = new DOMParser();	
+		const parser = new DOMParser();
 		reader.onloadend = function () {
 			text = reader.result;
 			//convert result to xml format
@@ -110,23 +111,23 @@ function createWorld(trkseg) {
 		const lon = dataPacket.attributes[1].nodeValue;
 		const elev = dataPacket.children[0].firstChild.nodeValue;
 		const time = dataPacket.children[1].firstChild.nodeValue;
-		
-		world.push([lat, lon, elev, time]); 
-	
-		
+
+		world.push([lat, lon, elev, time]);
+
+
 
 		latLons.push(new google.maps.LatLng(lat, lon));
 		// var neLat = neBound.lat();
 		// var neLng = neBound.lng();
 		if (lat < southmost) {
 			southmost = lat;
-		} 
+		}
 		if (lat > northmost) {
 			northmost = lat;
 		}
 		if (lon < westmost) {
 			westmost = lon;
-		} 
+		}
 		if (lon > eastmost) {
 			eastmost = lon;
 		}
@@ -153,20 +154,20 @@ class Vector {
 function createSegments(world) {
 	var distX, distY, distElev, currVec, angleFromPrev, roadObject;
 	var prevVec = new Vector(0, 0);
-	
+
 	var dark = true;
 	const LEN = 60;
 	var angle = 0;
 	var len = 0;
 	var changeElevScaled = 0;
 	for (let i = 1; i < world.length; i++) {
-	
+
 		distX = world[i][0] - world[i - 1][0];
 		distY = world[i][1] - world[i - 1][1];
 		distElev = world[i][2] - world[i - 1][2];
 		currVec = new Vector(distX, distY);
 		angleFromPrev = Vector.angleBetween(prevVec, currVec); //order matters, check sign
-		 // * 2 to amplify curve		
+		 // * 2 to amplify curve
 		changeElevScaled += distElev * ELEV_SCALE;
 		len += currVec.magnitude() * SCALE;
 		if (Number.isNaN(angleFromPrev)) {
@@ -179,7 +180,7 @@ function createSegments(world) {
 		var curveAmount = Math.sin(angle) * LEN * CURVE_MAGNIFY;
 		//world = list of [lat, lon, elev, time]
 
-		segments.push({length : LEN + changeElevScaled, curve : curveAmount, dark : dark, 
+		segments.push({length : LEN + changeElevScaled, curve : curveAmount, dark : dark,
 							x 			: world[i][0], y : world[i][1],
 							roadObject 	: roadObject,
 							angle		: Math.atan(distY, distX)
@@ -191,17 +192,21 @@ function createSegments(world) {
 		angle = 0;
 		changeElevScaled = 0;
 	}
-} 
+}
 
 //********************************************************************************** */
+function stop() {
+  cont = false;
+}
 function run() {
+  cont = true;
 	var runner = new Person();
 	if (latLons.length == 0) {
 		alert("no file uploaded or has incorrect data");
 		return;
 	}
 	drawMap();
-	
+
 	const DWIDTH_START = 160;
 	const ddwidth = 35; //const over each road segment
 	var dWidth = DWIDTH_START; //decreases from bottom segment to top segment
@@ -218,13 +223,13 @@ function run() {
 		let tY = HEIGHT -  bottomSeg.length * offset;
 
 		map.setCenter(new google.maps.LatLng(bottomSeg.x,bottomSeg.y));
-		
+
 		var marker = new google.maps.Marker({
 			position: new google.maps.LatLng(bottomSeg.x,bottomSeg.y),
 			map: map,
 			icon : {url : "/images/ant_freeze.gif", scaledSize : new google.maps.Size(30, 30)}
 		  });
-		  
+
 		  setTimeout(function() {marker.setMap(null)}, 100);
 
 		polyList.push({
@@ -274,13 +279,16 @@ function run() {
 		frame(polyList, tY - 15, runner); //-10 to top Y so it covers road
 		runner.updateState();
 		dWidth = DWIDTH_START;
-		if (offset > 0.01) { //0.25 accounts for fp errors
-			 setTimeout(drawWithOffset, 9, offset - 0.03, bottomIndex, tY, marker); 
-		} else {
+		if (offset > 0.01 && cont) { //0.25 accounts for fp errors
+			 setTimeout(drawWithOffset, 9, offset - 0.03, bottomIndex, tY, marker);
+		} else if (cont) {
 			//reset offset to 1, increment bottom index, -1 means topMost won't be used
-			setTimeout(drawWithOffset, 9, 1, bottomIndex + 1, -1, marker); 
+			setTimeout(drawWithOffset, 9, 1, bottomIndex + 1, -1, marker);
 		}
-	} 
+    else {
+      return
+    }
+	}
 	drawWithOffset(1, 1, -1); //start width index at 1, offset at 1
 	//notSetUpYet();
 
@@ -325,7 +333,7 @@ function frame(polyList, topMost, runner) {
 		// 		dim = flower.height;
 		// 		width = fWidth;
 		// 		height = fHeight;
-		// 	} 
+		// 	}
 		// 	var x;
 		// 	if (roadObject.onLeft) {
 		// 		x = polyList[i].bLeft.x - width - 100;
@@ -398,7 +406,7 @@ class Person {
 		//right
 		ctx.beginPath();
 		ctx.moveTo(WIDTH/2 + shirtWidth/2, armTop);
-		//					right arm height is "inverse" of left, 10 is a constant added 
+		//					right arm height is "inverse" of left, 10 is a constant added
 		ctx.lineTo(WIDTH/2 + shirtWidth/2 + armOut, armTop + (60 - this.armDown) + 10);
 		ctx.stroke();
 	}
@@ -427,13 +435,13 @@ class Person {
 			}
 		}
 	}
-	
+
 }
 
 //**************************************************** */
 const DIST = 20;
 /**
- * returns points with distance apart DIST on spline 
+ * returns points with distance apart DIST on spline
  */
 
 function spline(a, b, c) {
@@ -455,7 +463,7 @@ function spline(a, b, c) {
 	}
 	var points = Array();
 	var currX = a.x;
-	
+
 	//to be continued
 	//while there is a to get a name in rock and roll is to be there the whole time, and not know for when
 }
