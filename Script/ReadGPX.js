@@ -26,8 +26,8 @@ ctx.fillText("Simulation Displayed Here; Click \"run\" when ready.", canvas.widt
 
 function myMap() {
   var mapProp= {
-    center:new google.maps.LatLng(37.77,-122.41),
-    zoom:9
+    center : new google.maps.LatLng(37.77,-122.41),
+    zoom : 9
   };
   map = new google.maps.Map(document.getElementById("googleMap"),mapProp);
 }
@@ -197,6 +197,9 @@ function createSegments(world) {
 //********************************************************************************** */
 function stop() {
   cont = false;
+  segments = Array();
+  path.setMap(null);
+  myMap();
 }
 function run() {
   cont = true;

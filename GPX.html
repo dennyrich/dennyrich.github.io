@@ -9,52 +9,72 @@
 	<body>
 		<div id="nav_placeholder"></div>
 		<script src="/Script/nav.js"></script>
-		<div style="margin: 0px 150px;">
-			<h1 style="text-align: center;">GPX Reader</h1>
-			<p>First, upload File for input or press "Use Example". Then, press "Draw Map" to display path or "Run" to simulate the activity.</p>
-			<input id="GPX_file" type="file" onchange="read(this.files[0], null)"/><br>
-			<!-- <p>Or use example file</p> -->
-			<div style="text-align: center;">
-			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/Lunch_Run_Berk.gpx')">
-				use example (Berkeley)
-			</button>
-			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/Morning_Run_Mex.gpx')">
-				use example (Mexico City)
-			</button>
-			<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/circle_run_five_speed.gpx')">
-				use example (Track)
-			</button>
-			</div>
-			<br><br>
-			<div style="text-align: center;">
-				<button type="button", class="btn btn-outline-primary", onclick="drawMap(latLons)">Draw Map</button>
-				<button type="button", class="btn btn-outline-success", onclick="run();">Run</button>
-				<button type="button", class="btn btn-outline-danger", onclick = "stop();">Stop</button>
+		<div id="options">
+			<div style="margin: 0px 150px;">
+				<h1 style="text-align: center;">GPX Reader</h1>
+				<p>First, choose which file to use. Then, press "Draw Map" to display path or "Run" to simulate the activity.</p>
+				
+				<!-- <p>Or use example file</p> -->
+				<div style="text-align: center;">
+					<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/Lunch_Run_Berk.gpx')">
+						use example (Berkeley)
+					</button>
+					<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/Morning_Run_Mex.gpx')">
+						use example (Mexico City)
+					</button>
+					<button type="button" class="btn btn-outline-secondary" onclick="read(null, '/data/circle_run_five_speed.gpx')">
+						use example (Track)
+					</button>
+					<button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('GPX_file').style='block'">
+						use local file
+					</button><br>
+					<input id="GPX_file" style="display: none;" type="file" onchange="read(this.files[0], null); this.style.display='none'"/>
+					<br>
+				</div>
 			</div>
 
-			<!-- load reader file first -->
-			<h6 style="text-align:center", id="header">Waiting for File Upload (No File Uploaded)</h6>
-
-			<!-- begin google maps window -->
-			<div id="googleMap"></div>
-			<div style="text-align: center;"><canvas id='canvas' width='800' height='600' style="border:5px solid #eb0d0d;"></canvas></div>
-			<div style="display:none;">
-				<img id="flower" src="/images/flower.ico"width="50" height="50">
-				<img id="tree" src = "/images/tree.png" width ="200" height="200">
+			<div id="StravaAPI">
+				
 			</div>
-			<style>
-					#googleMap {
- 							width: 800px;
-							height: 400px;
- 							margin:auto;
-					}
-			</style>
-			<p>
-				About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and
-				other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map
-				and virtual recap of the run.
-			</p>
 		</div>
+		<br><br>
+		<div style="text-align: center;">
+			<button type="button", class="btn btn-outline-primary", onclick="drawMap(latLons); document.getElementById('options').style.display='none';">
+				Draw Map
+			</button>
+			<button type="button", class="btn btn-outline-success", onclick="run(); document.getElementById('options').style.display='none';">
+				Run
+			</button>
+			<button type="button", class="btn btn-outline-danger", onclick = "stop();">
+				Stop
+			</button>
+			<button type="button", class="btn btn-outline-primary", onclick="stop(); document.getElementById('options').style.display='block';">
+				Reset
+			</button>
+		</div>
+
+		<!-- load reader file first -->
+		<h6 style="text-align:center", id="header">Waiting for File Upload (No File Uploaded)</h6>
+
+		<!-- begin google maps window -->
+		<div id="googleMap"></div>
+		<div style="text-align: center;"><canvas id='canvas' width='800' height='600' style="border:5px solid #eb0d0d;"></canvas></div>
+		<div style="display:none;">
+			<img id="flower" src="/images/flower.ico"width="50" height="50">
+			<img id="tree" src = "/images/tree.png" width ="200" height="200">
+		</div>
+		<style>
+				#googleMap {
+							width: 800px;
+						height: 400px;
+							margin:auto;
+				}
+		</style>
+		<p>
+			About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and
+			other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map
+			and virtual recap of the run.
+		</p>
 
 		 <script src="Script/WorldGPX.js"></script>
 		 <script src="Script/ReadGPX.js"></script>
