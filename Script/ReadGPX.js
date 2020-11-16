@@ -1,3 +1,5 @@
+
+
 var latLons = Array();
 var world = Array();
 var swBound, neBound, bound; //sw, ne, and google maps object bound
@@ -8,10 +10,15 @@ var segments = Array();
 var HEIGHT = document.getElementById("canvas").height;
 var WIDTH = document.getElementById("canvas").width;
 
-const SCALE = 70000;
-const MIN_LEN = 20;
-const ELEV_SCALE = 5;
-const CURVE_MAGNIFY = 2;
+
+
+var SCALE;
+var horizon;
+const ELEV_SCALE = 3;
+const CURVE_MAGNIFY = 10;
+var CAMERA_HEIGHT;
+var CAMERA_DIST_BEHIND;
+var average_magnitude;
 
 var clouds = Array();
 
@@ -22,7 +29,6 @@ var	ctx = canvas.getContext('2d');
 ctx.font = "30px Arial";
 ctx.fillStyle = "red";
 ctx.textAlign = "center";
-ctx.fillText("Simulation Displayed Here; Click \"run\" when ready.", canvas.width/2, canvas.height/2);
 
 function myMap() {
   var mapProp= {
@@ -30,6 +36,34 @@ function myMap() {
     zoom : 9
   };
   map = new google.maps.Map(document.getElementById("googleMap"),mapProp);
+}
+
+function fileFromStrava() {
+	// copied from Strava api documentation
+	var StravaApiV3 = require('strava_api_v3');
+	var defaultClient = StravaApiV3.ApiClient.instance;
+
+	// Configure OAuth2 access token for authorization: strava_oauth
+	var strava_oauth = defaultClient.authentications['strava_oauth'];
+	strava_oauth.accessToken = "YOUR ACCESS TOKEN"
+
+	var api = new StravaApiV3.ActivitiesApi()
+
+	var opts = { 
+	  'before': 56, // {Integer} An epoch timestamp to use for filtering activities that have taken place before a certain time.
+	  'after': 56, // {Integer} An epoch timestamp to use for filtering activities that have taken place after a certain time.
+	  'page': 56, // {Integer} Page number. Defaults to 1.
+	  'perPage': 56 // {Integer} Number of items per page. Defaults to 30.
+	};
+
+	var callback = function(error, data, response) {
+	  if (error) {
+	    console.error(error);
+	  } else {
+	    console.log('API called successfully. Returned data: ' + data);
+	  }
+	};
+	api.getLoggedInAthleteActivities(opts, callback);
 }
 
 function drawMap() {
@@ -56,12 +90,11 @@ function drawMap() {
 }
 //**************************************************************************/
 //file name is null if file is uploaded
-function read(gpxFile, fileName) {
-	createClouds();
-	//const gpxFile = document.getElementById("GPX_file").files[0];
+function read() {
 	let text, xmlText;
-	if (!gpxFile) {
+	if (document.getElementById("file").value.length > 0) {
 		//use example file
+		const fileName = document.getElementById("file").value;
 		const request = new XMLHttpRequest();
 		request.open('GET', fileName, false);
 		request.send(null);
@@ -70,6 +103,11 @@ function read(gpxFile, fileName) {
 		parseGPX(xmlText);
 	} else {
 		//using user file
+		if (document.getElementById("GPX_file").files.length == 0) {
+			alert("no file uploaded");
+			return;
+		}
+		const gpxFile = document.getElementById("GPX_file").files[0];
 		const reader = new FileReader();
 		const parser = new DOMParser();
 		reader.onloadend = function () {
@@ -81,6 +119,7 @@ function read(gpxFile, fileName) {
 		reader.readAsText(gpxFile);
 	}
 	document.getElementById("header").innerHTML = "File Uploaded..."
+	$("#simulation").modal('show');
 }
 
 //creates data elements from xml (.gpx) doc and calls createWorld
@@ -95,7 +134,7 @@ function parseGPX(text) {
 	createWorld(trkseg);
 }
 
-
+// create data of [lat, lon, elev, time]
 function createWorld(trkseg) {
 	//let world = Array();
 	//let latLons = Array();
@@ -104,18 +143,20 @@ function createWorld(trkseg) {
 	var northmost = -180;
 	var eastmost = -180;
 	var westmost = 180;
-	// swBound = new google.maps.LatLng(180, 180);
-	// neBound = new google.maps.LatLng(-180, -180);
+
+	firstPacket = trkseg.children[0];
+	var total_magnitude = 0;
+	var prevLat = firstPacket.attributes[0].nodeValue;
+	var prevLon =  firstPacket.attributes[1].nodeValue;
 	for (const dataPacket of trkseg.children) {
 		const lat = dataPacket.attributes[0].nodeValue;
 		const lon = dataPacket.attributes[1].nodeValue;
 		const elev = dataPacket.children[0].firstChild.nodeValue;
-		const time = dataPacket.children[1].firstChild.nodeValue;
+		const time = Date.parse(dataPacket.children[1].firstChild.nodeValue);
 
 		world.push([lat, lon, elev, time]);
 
-
-
+		total_magnitude += Math.sqrt((lat - prevLat) ** 2 + (lon - prevLon) ** 2);
 		latLons.push(new google.maps.LatLng(lat, lon));
 		// var neLat = neBound.lat();
 		// var neLng = neBound.lng();
@@ -131,7 +172,15 @@ function createWorld(trkseg) {
 		if (lon > eastmost) {
 			eastmost = lon;
 		}
+		prevLat = lat;
+		prevLon = lon;
 	}
+	average_magnitude = total_magnitude / world.length;
+	
+	//desired height = HEIGHT / 20 --> averave_magnitude * SCALE = desired height --> Scale = (HEIGHT / 6) / average_magnitude
+	SCALE = (HEIGHT / 15) / average_magnitude;
+	CAMERA_DIST_BEHIND = average_magnitude * SCALE; 
+	CAMERA_HEIGHT = HEIGHT - average_magnitude * SCALE * 5;
 	bound = new google.maps.LatLngBounds(new google.maps.LatLng(southmost, eastmost), new google.maps.LatLng(northmost, westmost));
 	createSegments(world);
 }
@@ -156,75 +205,121 @@ function createSegments(world) {
 	var prevVec = new Vector(0, 0);
 
 	var dark = true;
-	const LEN = 60;
-	var angle = 0;
+
 	var len = 0;
+	var curveAmount = 0;
 	var changeElevScaled = 0;
+	var haversineDistance;
+	var deltaT;
+	var pace;
+	var grade;
 	for (let i = 1; i < world.length; i++) {
 
 		distX = world[i][0] - world[i - 1][0];
 		distY = world[i][1] - world[i - 1][1];
-		distElev = world[i][2] - world[i - 1][2];
+		distElev = (world[i][2] - world[i - 1][2]) * 3.281;
 		currVec = new Vector(distX, distY);
 		angleFromPrev = Vector.angleBetween(prevVec, currVec); //order matters, check sign
-		 // * 2 to amplify curve
-		changeElevScaled += distElev * ELEV_SCALE;
-		len += currVec.magnitude() * SCALE;
+		changeElevScaled += 0;//distElev * ELEV_SCALE;
+		
 		if (Number.isNaN(angleFromPrev)) {
 			angleFromPrev = 0; //division by 0
 		}
-		angle += angleFromPrev;
-		if (len < LEN / 3) {
+		//len and curveAmount accumulate if segments are too short
+		len  += currVec.magnitude() * Math.cos(angleFromPrev) * SCALE;
+		curveAmount += currVec.magnitude() * Math.sin(angleFromPrev) * SCALE * CURVE_MAGNIFY;
+		if (len < 5) {
 			continue;
 		}
-		var curveAmount = Math.sin(angle) * LEN * CURVE_MAGNIFY;
-		//world = list of [lat, lon, elev, time]
-
-		segments.push({length : LEN + changeElevScaled, curve : curveAmount, dark : dark,
-							x 			: world[i][0], y : world[i][1],
-							roadObject 	: roadObject,
-							angle		: Math.atan(distY, distX)
-						});
+	
+		haversineDistance = getDistanceFromLatLon(world[i][0], world[i][1], world[i - 1][0], world[i - 1][1]);
+		deltaT = (world[i][3] - world[i - 1][3]) / 1000;
+		paceSecondsPerMile = deltaT / haversineDistance;
+		grade = Math.round(distElev / (haversineDistance * 5280) * 100);
+		pace = Math.floor(paceSecondsPerMile / 60).toString().padStart(2, "0") + ":" + Math.round(paceSecondsPerMile % 60).toString().padStart(2, "0");
+		segments.push({
+				length 		: len + changeElevScaled, 
+				curve 		: curveAmount, 
+				dark 		: dark,
+				x 			: world[i][0], y : world[i][1],
+				roadObject 	: roadObject,
+				hDistance 	: haversineDistance,
+				deltaT 		: deltaT,
+				pace 		: pace,
+				elev 		: Math.round(world[i][2] * 3.281), //convert to feet
+				grade 		: grade
+		});
 		prevVec = currVec;
 		dark = !dark;
-		curveAmount = 0;
 		len = 0;
-		angle = 0;
-		changeElevScaled = 0;
+		curveAmount = 0;
 	}
+	
 }
+
 
 //********************************************************************************** */
 function stop() {
-  cont = false;
-  segments = Array();
-  path.setMap(null);
-  myMap();
+	$("#simulation").modal("hide");
+	document.getElementById("header").innerHTML = "Waiting for File Upload (No File Uploaded)"
+	myMap.zoom = 9;
+	ctx.clearRect(0, 0, WIDTH, HEIGHT);
+	cont = false;
+	segments = Array();
+	path.setMap(null);
+	myMap();
 }
 function run() {
-  cont = true;
+  	cont = true;
 	var runner = new Person();
 	if (latLons.length == 0) {
 		alert("no file uploaded or has incorrect data");
 		return;
 	}
+	
 	drawMap();
+	myMap.zoom = 2;
 
-	const DWIDTH_START = 160;
-	const ddwidth = 35; //const over each road segment
-	var dWidth = DWIDTH_START; //decreases from bottom segment to top segment
-	var polyList, tLeftX, tRightX;
-	/**
-	 * takes current offset and bottom segment
-	 */
-	function drawWithOffset(offset, bottomIndex, prevTopMost) {
-		const bottomSeg = segments[bottomIndex];
-		polyList = Array();
+	var polygonList;
 
-		tLeftX = (dWidth * offset + bottomSeg.curve * offset);
-		tRightX = (WIDTH - dWidth * offset + bottomSeg.curve * offset);
-		let tY = HEIGHT -  bottomSeg.length * offset;
+	function getNextPolygon(index, bLeftX, bRightX, bY, distanceTo, offset) {
+		const currSeg = segments[index];
+		const totalDistance = distanceTo + currSeg.length * offset;
+		const tY = CAMERA_HEIGHT * CAMERA_DIST_BEHIND / totalDistance;
+		//const tY = 500 / totalDistance;
+		// actual_height / height_on_screen
+		if (bY - tY < 1) {
+			return null;
+		}
+		const bottomCenter = (bRightX - bLeftX) / 2;
+		const width = WIDTH * CAMERA_DIST_BEHIND / distanceTo; //roadWidth * shrinkFactor
+		const curveOffset = currSeg.curve * CAMERA_DIST_BEHIND / distanceTo;
+		const tLeftX = bottomCenter + curveOffset - width / 2; 
+		const tRightX = bottomCenter + curveOffset + width / 2;
+		return {
+			bLeft : {x : bLeftX, y : bY},
+			bRight : {x : bRightX, y : bY},
+			tLeft : {x : tLeftX, y : tY},
+			tRight : {x : tRightX, y : tY},
+			dark : currSeg.dark,
+			roadObject : currSeg.roadObject
+		}
+	}
+	function drawWithOffset(offset, bottomIndex) {
+		//initialize vars
+		document.getElementById("pace").innerHTML = "Pace: " + segments[bottomIndex].pace + " per mile";
+		document.getElementById("elev").innerHTML = "Elev: " + segments[bottomIndex].elev.toString().padStart(5, 0) + " feet";
+		document.getElementById("grade").innerHTML = "Grade " + segments[bottomIndex].grade.toString().padStart(2, 0) +"%";
+		var distanceTo = CAMERA_DIST_BEHIND;
+		var index = bottomIndex;
+		//const width = WIDTH * CAMERA_DIST_BEHIND / CAMERA_DIST_BEHIND; 
+		var bLeftX = WIDTH/2 - WIDTH / 2; 
+		var bRightX = WIDTH/2 + WIDTH / 2;
+		var bottomY = HEIGHT;
+		polygonList = Array();
+		horizon = HEIGHT / 6; 
 
+		bottomSeg = segments[bottomIndex];
 		map.setCenter(new google.maps.LatLng(bottomSeg.x,bottomSeg.y));
 
 		var marker = new google.maps.Marker({
@@ -233,120 +328,50 @@ function run() {
 			icon : {url : "/images/ant_freeze.gif", scaledSize : new google.maps.Size(30, 30)}
 		  });
 
-		  setTimeout(function() {marker.setMap(null)}, 100);
-
-		polyList.push({
-			bLeft 	: {x : 0, 		y : HEIGHT},
-			bRight  : {x : WIDTH, 	y : HEIGHT},
-			tLeft  	: {x : tLeftX, 	y : tY},
-			tRight	: {x : tRightX,	y : tY},
-			dark 	: bottomSeg.dark,
-			roadObject : bottomSeg.roadObject
-		});
-		var bLeftX, bRightX, currSeg, bY;
-		var index = bottomIndex + 1;
-		var heightDecr = 0;
-		dWidth -= ddwidth;
-		while(tRightX - tLeftX > dWidth * 2 && dWidth > 0 && tY > 0 && index < segments.length) {
-			currSeg = segments[index];
-			bLeftX = tLeftX;
-			bRightX = tRightX;
-			bY = tY; //bottomY = topY
-
-			tLeftX += (dWidth + currSeg.curve);
-			tRightX += (-dWidth + currSeg.curve);
-			tY -= (currSeg.length - heightDecr);
-			if (tY < prevTopMost) {
-				tY = prevTopMost;
-				index = segments.length; //to break after this loop
-			}
-			polyList.push({
-				bLeft 	: {x : bLeftX, 	y : bY},
-				bRight  : {x : bRightX, y : bY},
-				tLeft  	: {x : tLeftX, 	y : tY},
-				tRight	: {x : tRightX,	y : tY},
-				dark	: currSeg.dark,
-				roadObject : currSeg.roadObject
-			});
-			index++;
-			dWidth -= ddwidth;
-			heightDecr += 10;
-			if (heightDecr > currSeg.length) {
+		setTimeout(function() {marker.setMap(null)}, 100);
+		var firstOffset = offset;
+		while(bottomY > horizon && index < segments.length) {
+			nextPolygon = getNextPolygon(index, bLeftX, bRightX, bottomY, distanceTo, firstOffset);
+			if (!nextPolygon) {
 				break;
 			}
-		}
-		if (prevTopMost != -1) {
-			tY = prevTopMost;
+			polygonList.push(nextPolygon);
+			//update vars
+			bLeftX = nextPolygon.tLeft.x;
+			bRightX = nextPolygon.tRight.x;
+			bottomY = nextPolygon.tRight.y;
+			distanceTo += segments[index].length * firstOffset;
+			firstOffset = 1; //offset only matters for first segment
+			index ++;
 		}
 
-		frame(polyList, tY - 15, runner); //-10 to top Y so it covers road
+		frame(polygonList, runner); //-10 to top Y so it covers road
 		runner.updateState();
-		dWidth = DWIDTH_START;
 		if (offset > 0.01 && cont) { //0.25 accounts for fp errors
-			 setTimeout(drawWithOffset, 9, offset - 0.03, bottomIndex, tY, marker);
+			 setTimeout(drawWithOffset, 9, offset - 0.03, bottomIndex);
 		} else if (cont) {
 			//reset offset to 1, increment bottom index, -1 means topMost won't be used
-			setTimeout(drawWithOffset, 9, 1, bottomIndex + 1, -1, marker);
+			setTimeout(drawWithOffset, 9, 1, bottomIndex + 1);
 		}
     else {
       return
     }
 	}
 	drawWithOffset(1, 1, -1); //start width index at 1, offset at 1
-	//notSetUpYet();
-
 }
 
-
-
-// function notSetUpYet() {
-// 	alert("not set up yet")
-// 	ctx.font = "30px Arial";
-// 	ctx.fillText("In Development.", 100, 50);
-// 	ctx.fillText("Come Back Later!", 100, 150);
-// }
-
-function frame(polyList, topMost, runner) {
-	//not used now
-	const flower = document.getElementById("flower");
-	const fWidth = document.getElementById("flower").width;
-	const fHeight = document.getElementById("flower").height;
-	var dim, img, width, height;
-	// end not used now
+function frame(polyList, runner) {
 
 	ctx.clearRect(0, 0, WIDTH, HEIGHT);
 	ctx.fillStyle = "Green";
-	ctx.fillRect(0, topMost, WIDTH, HEIGHT - topMost);
-	ctx.fillStyle = "Blue";
-	ctx.fillRect(0, 0, WIDTH, topMost);
-	var s = polyList[0];
-	var color;
+	ctx.fillRect(0, horizon, WIDTH, HEIGHT - horizon);
 	for (let i = 0; i < polyList.length; i++) {
-		if (polyList[i].dark){
-			color = "black";
-		} else {
-			color = "grey";
-		}
-		drawPoly(polyList[i], color);
-		//for objects on road
-		// roadObject = polyList[i].roadObject;
-		// if (roadObject) {
-		// 	if (roadObject.name == "flower") {
-		// 		img = flower;
-		// 		dim = flower.height;
-		// 		width = fWidth;
-		// 		height = fHeight;
-		// 	}
-		// 	var x;
-		// 	if (roadObject.onLeft) {
-		// 		x = polyList[i].bLeft.x - width - 100;
-		// 	} else {
-		// 		x = polyList[i].bRight.x + 100;
-		// 	}
-		// 	var y = polyList[i].bLeft.y + height;
-		// 	drawRoadObject(img, {x : x, y : y}, dim);
-		// }
+		
+		drawPoly(polyList[i], polyList[i].dark ? "black" : "grey");
 	}
+	ctx.fillStyle = "Blue";
+	ctx.fillRect(0, 0, WIDTH, horizon);
+	var s = polyList[0];
 	runner.draw();
 }
 
@@ -355,6 +380,7 @@ function drawPoly(polygon, color) {
 	const bLeft = polygon.bLeft;
 	const tRight = polygon.tRight;
 	const tLeft = polygon.tLeft;
+	const height = bRight.y - tRight.y;
 	ctx.moveTo(bRight.x, bRight.y);
 	ctx.beginPath();
 	ctx.lineTo(bLeft.x, bLeft.y);
@@ -368,14 +394,7 @@ function drawRoadObject(img, base, dim) {
 	ctx.drawImage(img, base.x, base.y, dim, dim);
 }
 //*************************************************** ****** ****** */
-function createClouds() {
-	for (let i = 0; i < 20; i++) {
-		clouds.push({
-			size : Math.random() * 100 + 10,
-			angle : 18 * i // goes from 0 to 360
-		});
-	}
-}
+
 class Person {
 	constructor() {
 		this.state = 0;
@@ -440,44 +459,25 @@ class Person {
 	}
 
 }
-
-//**************************************************** */
-const DIST = 20;
 /**
- * returns points with distance apart DIST on spline
+ * helper functions below
  */
+// taken from https://stackoverflow.com/a/27943 (changed to miles)
+function getDistanceFromLatLon(lat1,lon1,lat2,lon2) {
+	var R = 3958.8; // Radius of the earth in km
+	var dLat = deg2rad(lat2-lat1);  // deg2rad below
+	var dLon = deg2rad(lon2-lon1); 
+	var a = 
+	  Math.sin(dLat/2) * Math.sin(dLat/2) +
+	  Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+	  Math.sin(dLon/2) * Math.sin(dLon/2)
+	  ; 
+	var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+	var d = R * c; // Distance in mi 
+	return d;
+  }
+  
+  function deg2rad(deg) {
+	return deg * (Math.PI/180)
+  }
 
-function spline(a, b, c) {
-	if (!isFunction(a, b, c)) {
-		transpose([a, b, c]);
-	}
-	var denom1 = (a.x - b.x) * (a.x - c.x);
-	var denom2 = (b.x - a.x) * (b.x - c.x);
-	var denom3 = (c.x - a.x) * (c.x - b.x);
-	//num = (x - x[j]) * y[i] for j != i
-	var num1 = function (inputX) {
-			return (inputX - b.x) * (inputX - c.x) * a.y;
-	}
-	var num2 = function (inputX) {
-		return (inputX - a.x) * (inputX - c.x) * b.y;
-	}
-	var num3 = function (inputX) {
-		return (inputX - a.x) * (inputX - b.x) * c.y;
-	}
-	var points = Array();
-	var currX = a.x;
-
-	//to be continued
-	//while there is a to get a name in rock and roll is to be there the whole time, and not know for when
-}
-
-function isFunction(a, b, c) {
-	return (a.x < b.x && b.x < c.x) || (c.x < b.x && b.x < a.x);
-}
-function transpose(points) {
-	for (const p in points) {
-		var temp = p.x;
-		p.x = p.y;
-		p.y = temp;
-	}
-}
