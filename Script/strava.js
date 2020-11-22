@@ -114,8 +114,7 @@ function getAthlete(res) {
 }
 
 document.getElementById("authorizeStrava").onclick = function () {
-    productionUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://localhost:8000/GPX.html&scope=activity:read_all,read_all';
-    url = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://dennyrich.github.io/GPX.html&scope=activity:read_all,read_all';
-    location.href = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://localhost:8000/GPX.html&scope=activity:read_all,read_all'
+    const developmentUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://localhost:8000/GPX.html&scope=activity:read_all,read_all';
+    const productionUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://dennyrich.github.io/GPX.html&scope=activity:read_all,read_all';
+    location.href = productionUrl;
 }
-
