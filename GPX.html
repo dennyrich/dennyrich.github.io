@@ -8,39 +8,82 @@
 	</head>
 	<body>
 		<script src="/Script/nav.js"></script>
-		<div id="options">
 			<div style="margin: 0px 150px;">
-				<h1 style="text-align: center;">GPX Reader</h1>
+				<h1 style="text-align: center;">Activity Analysis</h1><br>
 
 				<!-- <p>Or use example file</p> -->
-				
+				<!-- <h6 style="text-align:center"; id="header">Connect to strava to select an activity.</h6>-->
+				<script>
+					function displayFileInput(val) {
+						if (val == "") {
+							document.getElementById("GPX_file").style.display = "block";
+						} 
+					}
+				</script>
 				<div class="row">
-					<div class="form-group col-md-6" >
-						<select name="file" id="file" onchange="displayFileInput()">
-							<option value="" selected="selected">Select File to Use</option>
-							<option value='/data/Lunch_Run_Berk.gpx' onclick="document.getElementById('GPX_file').style.display='none'">Example: Berkeley, Ca</option>
-							<option value='/data/Morning_Run_Mex.gpx' onclick="document.getElementById('GPX_file').style.display='none'">Example: Mexico City</option>
-							<option value='/data/circle_run_five_speed.gpx' onclick="document.getElementById('GPX_file').style.display='none'">Track</option>
-							<option value='/data/Afternoon_run.gpx' onclick="document.getElementById('GPX_file').style.display='none'">Hilly Run</option>
-							<option value="" onclick="document.getElementById('GPX_file').style.display='block'">Use Local File</option>
-						</select>
-						<input id="GPX_file" style="display: none;" type="file"><br><br>
-						<p></p>
-					</div>
-					<div class="form-group col-md-6" >
-						<button type="button" class="btn btn-outline-success" onclick="read()">Go</button>
-					</div>
-				</div>	
-				
-			</div>
+					<div class="col-md-6">
+						<button id="authorizeStrava" class="btn btn-primary orange-background">Connect to Strava</button><br>
+						<style type='text/css'>
+							.orange-background {background-color: #FC4C02;}
+						</style><br><br><br>
+						
+						<div class="row">
+							<div class="col-md-6">
+								<p>Or choose an example. Then press Go.</p>
+								<select name="file" id="file" onchange="displayFileInput(this.value)">
+									<option value="" selected="selected">Select File to Use</option>
+									<option value='/data/Lunch_Run_Berk.gpx'>Example: Berkeley, Ca</option>
+									<option value='/data/Morning_Run_Mex.gpx'>Example: Mexico City</option>
+									<option value='/data/circle_run_five_speed.gpx'>Example: Track</option>
+									<option value='/data/Afternoon_run.gpx' class="exampleInput">Example: Hilly Run</option>
+									<option value="" id="showFileInput" onselect="document.getElementById('fileInputDiv').style.display='block'">Use Local File</option>
+								</select><br><br>
+								<input style="display: none"id="GPX_file" type="file">
+								<button type="button" class="btn btn-outline-success" onclick="read()">Go</button>
+							</div>
+							<div class="col-md-6">
 
-			<div id="StravaAPI">
-
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div id="selectActivity">
+							<h4 id="tableTitle" style="text-align: center;"></h4>
+							<div id="tableWrapper" style="height:400px;overflow:auto;">
+								<table class="table" id="activitiesTable">
+									<tbody id="activitiesTableBody">
+									</tbody>
+								</table>   
+							</div>
+						</div>
+						<style>
+							.table td {
+								padding: 0.3rem !important;
+								color: white;
+								background-color: #FC4C02;
+								border: 2px solid;
+								border-radius: 6px;
+								-moz-border-radius: 6px;
+							}
+							.table td:hover {
+								padding: 0.3rem !important;
+								color: white;
+								background-color: rgb(141, 42, 0);
+								border: 2px solid;
+								cursor: pointer;
+							}
+							.table td:first-child {
+     							border-left: none;
+							}
+						</style>
+					</div>
+				</div>
+			<H5 id="athleteName"></H5>
 			</div>
-			</div>
+			
 
 			<!-- load reader file first -->
-			<h6 style="text-align:center", id="header">Select which file to use. Then, press Go.</h6>
+			
 
 			<!-- begin google maps window -->
 			<!-- <div id="googleMap"></div> -->
@@ -81,13 +124,13 @@
 				<div class="modal-body">
 						<div class="row">
 							<div class="col-4">
-								<b id="pace"></b>
+								<b id="pace" style="color:deeppink;"></b>
 							</div>
 							<div class="col-4">
-								<b id="elev"></b>
+								<b id="elev" style="color:deeppink;"></b>
 							</div>
 							<div class="col-4">
-								<b id="grade"></b>
+								<b id="grade" style="color:deeppink;"></b>
 							</div>
 						
 						</div>
@@ -111,17 +154,9 @@
 	</div>
 	<!-- scripts -->
 	<script src="Script/ReadGPX.js"></script>
+	<sript src="node.js"></sript>
 	<script id = "googleAPI"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap"></script>
-
-	<!--  -->
-
-	<script>
-		function displayFileInput() {
-			if (document.getElementById("file").value == "") {
-				document.getElementById('GPX_file').style='block'
-			}
-		}
-	</script>
+	<script src="Script/strava.js"></script>
 	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
 	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>

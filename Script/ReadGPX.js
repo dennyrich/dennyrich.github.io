@@ -15,7 +15,7 @@ var WIDTH = document.getElementById("canvas").width;
 var SCALE;
 var horizon;
 const ELEV_SCALE = 3;
-const CURVE_MAGNIFY = 10;
+const CURVE_MAGNIFY = 5;
 var CAMERA_HEIGHT;
 var CAMERA_DIST_BEHIND;
 var average_magnitude;
@@ -38,34 +38,6 @@ function myMap() {
   map = new google.maps.Map(document.getElementById("googleMap"),mapProp);
 }
 
-function fileFromStrava() {
-	// copied from Strava api documentation
-	var StravaApiV3 = require('strava_api_v3');
-	var defaultClient = StravaApiV3.ApiClient.instance;
-
-	// Configure OAuth2 access token for authorization: strava_oauth
-	var strava_oauth = defaultClient.authentications['strava_oauth'];
-	strava_oauth.accessToken = "YOUR ACCESS TOKEN"
-
-	var api = new StravaApiV3.ActivitiesApi()
-
-	var opts = { 
-	  'before': 56, // {Integer} An epoch timestamp to use for filtering activities that have taken place before a certain time.
-	  'after': 56, // {Integer} An epoch timestamp to use for filtering activities that have taken place after a certain time.
-	  'page': 56, // {Integer} Page number. Defaults to 1.
-	  'perPage': 56 // {Integer} Number of items per page. Defaults to 30.
-	};
-
-	var callback = function(error, data, response) {
-	  if (error) {
-	    console.error(error);
-	  } else {
-	    console.log('API called successfully. Returned data: ' + data);
-	  }
-	};
-	api.getLoggedInAthleteActivities(opts, callback);
-}
-
 function drawMap() {
 	if (latLons.length == 0) {
 		alert("no file uploaded or has incorrect data");
@@ -86,9 +58,11 @@ function drawMap() {
 	});
 	path.setMap(map);
 	map.fitBounds(bound);
-
 }
 //**************************************************************************/
+function createWorldFromStream(steam) {
+	
+}
 //file name is null if file is uploaded
 function read() {
 	let text, xmlText;
@@ -118,11 +92,10 @@ function read() {
 		};
 		reader.readAsText(gpxFile);
 	}
-	document.getElementById("header").innerHTML = "File Uploaded..."
-	$("#simulation").modal('show');
+	//document.getElementById("header").innerHTML = "File Uploaded..."
 }
 
-//creates data elements from xml (.gpx) doc and calls createWorld
+//creates data elements from xml (.gpx) doc and calls createLatLonElevTime
 function parseGPX(text) {
 	let parser = new DOMParser();
 	let trk = text.getElementsByTagName("trk")[0];
@@ -131,35 +104,60 @@ function parseGPX(text) {
 	// console.log(nameValue);
 
 	let trkseg = trk.children[2];
-	createWorld(trkseg);
+	createLatLonElevTimeGPX(trkseg);
 }
 
-// create data of [lat, lon, elev, time]
-function createWorld(trkseg) {
-	//let world = Array();
-	//let latLons = Array();
-	let index = 0;
-	var southmost = 180;
-	var northmost = -180;
-	var eastmost = -180;
-	var westmost = 180;
-
-	firstPacket = trkseg.children[0];
-	var total_magnitude = 0;
-	var prevLat = firstPacket.attributes[0].nodeValue;
-	var prevLon =  firstPacket.attributes[1].nodeValue;
+// create array of [lat, lon, elev, time] from trkseg of GPX file
+function createLatLonElevTimeGPX(trkseg) {
+	latLonElevTimeArr = Array();
 	for (const dataPacket of trkseg.children) {
 		const lat = dataPacket.attributes[0].nodeValue;
 		const lon = dataPacket.attributes[1].nodeValue;
 		const elev = dataPacket.children[0].firstChild.nodeValue;
 		const time = Date.parse(dataPacket.children[1].firstChild.nodeValue);
+		latLonElevTimeArr.push([lat, lon, elev, time]);
+	}
+
+	createWorld(latLonElevTimeArr, true);
+}
+// create array of [lat, lon, elev, time] from stava stream object
+function createLatLonElevTimeStream(stream) {
+	latLonElevTimeArr = Array();
+	var lat, lon, elev, time;
+	for (let i = 0; i < stream["time"].data.length; i++) {
+		lat = stream["latlng"].data[i][0];
+		lon = stream["latlng"].data[i][1];
+		elev = stream["altitude"].data[i]
+		time = stream["time"].data[i];
+		latLonElevTimeArr.push([lat, lon, elev, time]);
+	}
+
+	createWorld(latLonElevTimeArr, false);
+}
+
+// create world of [lat, lon, elev, time], set bounds for map, set scale
+function createWorld(latLonElevTimeArr, isTrkSeg) {
+
+	var southmost = 180;
+	var northmost = -180;
+	var eastmost = -180;
+	var westmost = 180;
+
+	const firstPacket = latLonElevTimeArr[0];
+	var total_magnitude = 0;
+	var prevLat = firstPacket[0];
+	var prevLon =  firstPacket[1];
+	for (const dataPacket of latLonElevTimeArr) {
+		const lat = dataPacket[0];
+		const lon = dataPacket[1];
+		const elev = dataPacket[2];
+		const time = dataPacket[3];
 
 		world.push([lat, lon, elev, time]);
 
 		total_magnitude += Math.sqrt((lat - prevLat) ** 2 + (lon - prevLon) ** 2);
 		latLons.push(new google.maps.LatLng(lat, lon));
-		// var neLat = neBound.lat();
-		// var neLng = neBound.lng();
+	
 		if (lat < southmost) {
 			southmost = lat;
 		}
@@ -178,11 +176,12 @@ function createWorld(trkseg) {
 	average_magnitude = total_magnitude / world.length;
 	
 	//desired height = HEIGHT / 20 --> averave_magnitude * SCALE = desired height --> Scale = (HEIGHT / 6) / average_magnitude
-	SCALE = (HEIGHT / 15) / average_magnitude;
+	SCALE = (HEIGHT / 30) / average_magnitude;
 	CAMERA_DIST_BEHIND = average_magnitude * SCALE; 
 	CAMERA_HEIGHT = HEIGHT - average_magnitude * SCALE * 5;
+	$("#simulation").modal('show');
 	bound = new google.maps.LatLngBounds(new google.maps.LatLng(southmost, eastmost), new google.maps.LatLng(northmost, westmost));
-	createSegments(world);
+	createSegments(world, isTrkSeg);
 }
 //***************************************************************************** */
 
@@ -200,7 +199,7 @@ class Vector {
 }
 
 
-function createSegments(world) {
+function createSegments(world, isTrkSeg) {
 	var distX, distY, distElev, currVec, angleFromPrev, roadObject;
 	var prevVec = new Vector(0, 0);
 
@@ -213,6 +212,7 @@ function createSegments(world) {
 	var deltaT;
 	var pace;
 	var grade;
+
 	for (let i = 1; i < world.length; i++) {
 
 		distX = world[i][0] - world[i - 1][0];
@@ -233,7 +233,11 @@ function createSegments(world) {
 		}
 	
 		haversineDistance = getDistanceFromLatLon(world[i][0], world[i][1], world[i - 1][0], world[i - 1][1]);
-		deltaT = (world[i][3] - world[i - 1][3]) / 1000;
+		if (isTrkSeg) {
+			deltaT = (world[i][3] - world[i - 1][3]) / 1000;
+		} else {
+			deltaT = (world[i][3] - world[i - 1][3]);
+		}
 		paceSecondsPerMile = deltaT / haversineDistance;
 		grade = Math.round(distElev / (haversineDistance * 5280) * 100);
 		pace = Math.floor(paceSecondsPerMile / 60).toString().padStart(2, "0") + ":" + Math.round(paceSecondsPerMile % 60).toString().padStart(2, "0");
@@ -254,20 +258,18 @@ function createSegments(world) {
 		len = 0;
 		curveAmount = 0;
 	}
-	
 }
 
 
 //********************************************************************************** */
 function stop() {
-	$("#simulation").modal("hide");
-	document.getElementById("header").innerHTML = "Waiting for File Upload (No File Uploaded)"
+	cont = false;
+	//document.getElementById("header").innerHTML = "Waiting for File Upload (No File Uploaded)"
 	myMap.zoom = 9;
 	ctx.clearRect(0, 0, WIDTH, HEIGHT);
-	cont = false;
-	segments = Array();
 	path.setMap(null);
 	myMap();
+	$("#simulation").modal("hide");
 }
 function run() {
   	cont = true;
@@ -352,10 +354,11 @@ function run() {
 		} else if (cont) {
 			//reset offset to 1, increment bottom index, -1 means topMost won't be used
 			setTimeout(drawWithOffset, 9, 1, bottomIndex + 1);
+		} else {
+			latLons = Array();
+			segments = Array();
+			return
 		}
-    else {
-      return
-    }
 	}
 	drawWithOffset(1, 1, -1); //start width index at 1, offset at 1
 }
