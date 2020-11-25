@@ -1,165 +1,215 @@
 <!DOCTYPE HTML>
 <HTML>
-	<head>
-		<meta charset="UTF-8" />
-    	<title>Denny Rich</title>
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-	</head>
-	<body>
-		<script src="/Script/nav.js"></script>
-			<div style="margin: 0px 150px;">
-				<h1 style="text-align: center;">Activity Analysis</h1><br>
+<head>
+	<meta charset="UTF-8" />
+	<title>Denny Rich</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+		integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link rel="shortcut icon" href="">
+</head>
 
-				<!-- <p>Or use example file</p> -->
-				<!-- <h6 style="text-align:center"; id="header">Connect to strava to select an activity.</h6>-->
-				<script>
-					function displayFileInput(val) {
-						if (val == "") {
-							document.getElementById("GPX_file").style.display = "block";
-						} 
-					}
-				</script>
-				<div class="row">
-					<div class="col-md-6">
-						<button id="authorizeStrava" class="btn btn-primary orange-background">Connect to Strava</button><br>
-						<style type='text/css'>
-							.orange-background {background-color: #FC4C02;}
-						</style><br><br><br>
-						
-						<div class="row">
-							<div class="col-md-6">
-								<p>Or choose an example. Then press Go.</p>
-								<select name="file" id="file" onchange="displayFileInput(this.value)">
-									<option value="" selected="selected">Select File to Use</option>
-									<option value='/data/Lunch_Run_Berk.gpx'>Example: Berkeley, Ca</option>
-									<option value='/data/Morning_Run_Mex.gpx'>Example: Mexico City</option>
-									<option value='/data/circle_run_five_speed.gpx'>Example: Track</option>
-									<option value='/data/Afternoon_run.gpx' class="exampleInput">Example: Hilly Run</option>
-									<option value="" id="showFileInput" onselect="document.getElementById('fileInputDiv').style.display='block'">Use Local File</option>
-								</select><br><br>
-								<input style="display: none"id="GPX_file" type="file">
-								<button type="button" class="btn btn-outline-success" onclick="read()">Go</button>
-							</div>
-							<div class="col-md-6">
+<body>
+	<script src="/Script/nav.js"></script>
+	<div style="margin: 0px 150px;">
+		<h1 style="text-align: center;">Activity Analysis</h1>
 
-							</div>
-						</div>
-					</div>
-					<div class="col-md-6">
-						<div id="selectActivity">
-							<h4 id="tableTitle" style="text-align: center;"></h4>
-							<div id="tableWrapper" style="height:400px;overflow:auto;">
-								<table class="table" id="activitiesTable">
-									<tbody id="activitiesTableBody">
-									</tbody>
-								</table>   
-							</div>
-						</div>
-						<style>
-							.table td {
-								padding: 0.3rem !important;
-								color: white;
-								background-color: #FC4C02;
-								border: 2px solid;
-								border-radius: 6px;
-								-moz-border-radius: 6px;
-							}
-							.table td:hover {
-								padding: 0.3rem !important;
-								color: white;
-								background-color: rgb(141, 42, 0);
-								border: 2px solid;
-								cursor: pointer;
-							}
-							.table td:first-child {
-     							border-left: none;
-							}
-						</style>
+		<!-- <p>Or use example file</p> -->
+		<!-- <h6 style="text-align:center"; id="header">Connect to strava to select an activity.</h6>-->
+		<script>
+			function displayFileInput(val) {
+				if (val == "") {
+					document.getElementById("GPX_file").style.display = "block";
+				} else {
+					stop();
+					read();
+				}
+			}
+		</script>
+
+		<button id="authorizeStrava" class="btn btn-primary orange-background">Connect to Strava</button>
+		<span>&nbsp;&nbsp;&nbsp; Choose activity after connecting to Strava or...</span>
+		<select name="file" id="file" onchange="displayFileInput(this.value)">
+			<option value="" selected="selected">Select Example</option>
+			<option value='/data/Lunch_Run_Berk.gpx'>Ex: Berkeley, Ca</option>
+			<option value='/data/Morning_Run_Mex.gpx'>Ex: Mexico City</option>
+			<option value='/data/circle_run_five_speed.gpx'>Ex: Track</option>
+			<option value='/data/Afternoon_run.gpx' class="exampleInput">Ex: Hilly Run</option>
+			<option value="" id="showFileInput"
+				onselect="document.getElementById('fileInputDiv').style.display='block'">Use Local File</option>
+		</select>
+		<input style="display: none" id="GPX_file" type="file" onchange="read()">
+		<div style="text-align: right;">
+			<!-- <button type="button" , class="btn btn-outline-primary" , onclick="drawMap(latLons);">
+				Draw Map
+			</button> -->
+			<button type="button" , class="btn btn-outline-success" , onclick="run();">
+				Run
+			</button>
+			<button type="button" , class="btn btn-outline-danger" , onclick="stop();">
+					Stop
+			</button>
+		</div>
+		<div class="row">
+			<div class="col-2"></div>
+			<div class="col-3">
+				<b id="pace" style="color:deeppink;"></b>
+			</div>
+			<div class="col-4">
+				<b id="elev" style="color:deeppink;"></b>
+			</div>
+			<div class="col-3">
+				<b id="grade" style="color:deeppink;"></b>
+			</div>
+
+		</div>
+		<div class="row">
+			<div class="col-3">
+				<div id="selectActivity">
+					<h4 id="tableTitle" style="text-align: center;"></h4>
+					<div id="tableWrapper" style="height:400px;overflow:auto;">
+						<table class="table" id="activitiesTable">
+							<tbody id="activitiesTableBody">
+							</tbody>
+						</table>
 					</div>
 				</div>
-			<H5 id="athleteName"></H5>
 			</div>
-			
 
-			<!-- load reader file first -->
-			
+			<div class="col-3 padding-0">
 
-			<!-- begin google maps window -->
-			<!-- <div id="googleMap"></div> -->
-			<!-- <div style="text-align: center;"><canvas id='canvas' width='800' height='600' style="border:5px solid #eb0d0d;"></canvas></div> -->
-			<div style="display:none;">
-				<img id="flower" src="/images/flower.ico"width="50" height="50">
-				<img id="tree" src = "/images/tree.png" width ="200" height="200">
+				<div id="googleMap"></div>
 			</div>
-			<style>
-					#googleMap {
-								height: 500px;
-								max-width: 100%;
-								margin:auto;
-								padding: 0px;
-					}
-			</style>
-			<!-- <p>
+			<div class="col-6 padding-0">
+
+				<div><canvas id='canvas' style="border:5px solid #eb0d0d; width:100%; height:500px"></canvas></div>
+			</div>
+		</div>
+
+		<style>
+			.table td {
+				padding: 0.3rem !important;
+				color: white;
+				background-color: #FC4C02;
+				border: 2px solid;
+				border-radius: 6px;
+				-moz-border-radius: 6px;
+			}
+
+			.table td:hover {
+				padding: 0.3rem !important;
+				color: white;
+				background-color: rgb(141, 42, 0);
+				border: 2px solid;
+				cursor: pointer;
+			}
+
+			.table td:first-child {
+				border-left: none;
+			}
+
+			.padding-0 {
+				padding-right: 0;
+				padding-left: 0;
+			}
+
+			.orange-background {
+				background-color: #FC4C02;
+			}
+
+			#googleMap {
+				height: 500px;
+				max-width: 100%;
+				margin: 0px;
+				padding: 0px;
+			}
+		</style>
+
+
+		<H5 id="athleteName"></H5>
+	</div>
+
+
+	<!-- load reader file first -->
+
+
+	<!-- begin google maps window -->
+	<!-- <div id="googleMap"></div> -->
+	<!-- <div style="text-align: center;"><canvas id='canvas' width='800' height='600' style="border:5px solid #eb0d0d;"></canvas></div> -->
+	<div style="display:none;">
+		<img id="flower" src="/images/flower.ico" width="50" height="50">
+		<img id="tree" src="/images/tree.png" width="200" height="200">
+	</div>
+	<!-- <p>
 				About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and
 				other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map
 				and virtual recap of the run.
 			</p> -->
-			<!-- modals -->
-	<div class="modal fade bd-example-modal-lg" id="simulation" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<!-- modals -->
+	<div class="modal fade bd-example-modal-lg" id="simulation" tabindex="-1" role="dialog"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-lg" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="exampleModalLabel">Simulation</h5>
-					
+
 					<div style="text-align: center;">
-						<button type="button", class="btn btn-outline-primary", onclick="drawMap(latLons);">
+						<button type="button" , class="btn btn-outline-primary" , onclick="drawMap(latLons);">
 							Draw Map
 						</button>
-						<button type="button", class="btn btn-outline-success", onclick="run();">
+						<button type="button" , class="btn btn-outline-success" , onclick="run();">
 							Run
 						</button>
 					</div>
 				</div>
 				<div class="modal-body">
-						<div class="row">
-							<div class="col-4">
-								<b id="pace" style="color:deeppink;"></b>
-							</div>
-							<div class="col-4">
-								<b id="elev" style="color:deeppink;"></b>
-							</div>
-							<div class="col-4">
-								<b id="grade" style="color:deeppink;"></b>
-							</div>
-						
-						</div>
 					<div class="row">
 						<div class="col-4">
-							
-							<div id="googleMap"></div>
+
+							<!-- <div id="googleMap"></div> -->
 						</div>
 						<div class="col-8">
-							<div><canvas id='canvas' style="border:5px solid #eb0d0d; width:100%; height:500px"></canvas></div>
+							<!-- <div class="row">
+									<div class="col-4">
+										<b id="pace" style="color:deeppink;"></b>
+									</div>
+									<div class="col-4">
+										<b id="elev" style="color:deeppink;"></b>
+									</div>
+									<div class="col-4">
+										<b id="grade" style="color:deeppink;"></b>
+									</div>
+								
+								</div>
+							<div><canvas id='canvas' style="border:5px solid #eb0d0d; width:100%; height:500px"></canvas></div> -->
 						</div>
 					</div>
-					
+
 				</div>
 				<div class="modal-footer">
-					
+
 					<button type="button" onclick="stop()" class="btn btn-secondary">Close</button>
 				</div>
 			</div>
 		</div>
 	</div>
+
 	<!-- scripts -->
 	<script src="Script/ReadGPX.js"></script>
 	<sript src="node.js"></sript>
-	<script id = "googleAPI"src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap"></script>
+	<script id="googleAPI"
+		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap"></script>
 	<script src="Script/strava.js"></script>
-	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+		integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+		crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+		integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+		crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+		integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+		crossorigin="anonymous"></script>
 
-	</body>
+</body>
+
 </HTML>

@@ -1,12 +1,19 @@
 const url_string = window.location.href;
 const url = new URL(url_string);
 const code = url.searchParams.get("code");
-var access_token;
+const access_token = url.searchParams.get("access_token");
+const name = url.searchParams.get("name");
+const connected = url.searchParams.get("connected");
+const stravaBaseUrl = "https://www.strava.com/api/v3/";
+const azureBaseUrl = "https://activity-analyzer.azurewebsites.net/";
 console.log(code);
-if (code && !access_token){
+if (access_token) {
+    getActivities();
+    document.getElementById("authorizeStrava").innerHTML = "Hello, " + name + "!";
+} else if (code){
     //reAuthorize(); //exchange code for token (through javascript post)
     //const authUrl = "http://127.0.0.1:5000/auth/" + code;
-    const authUrl = "https://activity-analyzer.azurewebsites.net/auth/" + code;
+    const authUrl = azureBaseUrl + "auth/" + code;
     fetch(authUrl, {
         method : "GET"
     })
@@ -21,23 +28,22 @@ if (code && !access_token){
                 if (res.errors) {
                     throw new Error("access token expired");
                 }
-                document.getElementById("authorizeStrava").innerHTML = "Hello, " + res["athlete"]["firstname"] + "!";
-                access_token = res.access_token;
                 
-                getActivities(res);
+                const name = res["athlete"]["firstname"];
+                const token = res.access_token;
+                location.href = `/GPX.html?access_token=${token}&name=${name}`;
             })
                 .catch((error) => {
-                    alert("error: could not authenticate athlete");
+                    alert("error: could not authenticate athlete \n" + error);
                     window.location.href = "/GPX.html";
                 });
 }
 
-function getActivities(res) { 
+function getActivities() { 
     const after = "1542653603";
-    const token = res.access_token;
-    const activitiesLink = `https://www.strava.com/api/v3/athlete/activities?access_token=${token}&after=${after}&per_page=70`
+    const activitiesLink = stravaBaseUrl + `athlete/activities?access_token=${access_token}&per_page=70`
     fetch(activitiesLink)
-        .then((res) => res.json())
+        .then((res) => res.ok ? res.json() : new Error("could not get activities"))
             .then((res) => {
             const table = document.getElementById("activitiesTable");
             var id;
@@ -48,7 +54,7 @@ function getActivities(res) {
                 date = res[i]["start_date"].substring(0, 10);
                 name = res[i]["name"];
                 console.log(name);
-                table.insertRow().innerHTML = `<td value='${id}' style="text-align:center">${name} ${date}</td>`
+                table.insertRow().innerHTML = `<td value='${id}' style="text-align:center">${name} <br> ${date}</td>`
             }
             const tableCells = table.getElementsByTagName("td")
             for (let i = 0; i < tableCells.length; i++) {
@@ -56,65 +62,29 @@ function getActivities(res) {
                     console.log(this);
                     const id = this.attributes["value"].value; //get value
                     getStream(id);
-                    //getActitiyGPX(id);
                 }
             }
-            document.getElementById("tableTitle").innerHTML = "Select an activity";
+            document.getElementById("tableTitle").innerHTML = "Select an activity"
             document.getElementById("selectActivity").style.border = "5px solid olive"
         })
-            .catch((error) => {alert("Sorry, strava API no setup yet. Please upload file")});
-}
-
-// function reAuthorize(id) {
-//     const auth_link = "https://www.strava.com/oauth/token"
-//     fetch(auth_link, {
-//         method : 'post',
-//         headers : {
-//             'Accept': 'application/json, text/plain, */*',
-//             'Content-Type' : 'application/json'
-//         },
-//         body : JSON.stringify({
-//                 client_id : '56464',
-//                 client_secret : 'c69c6b35d9596089e00980379f82b1e3b16d0283',
-//                 grant_type : 'authorization_code',
-//                 code : code
-//             })
-        
-//     }).then(res => res.json())
-//         .then(res =>getActivities(res))
-// }
-
-function getActitiyGPX(id) {
-    const url = `https://www.strava.com/api/v3/routes/${id}/export_gpx?access_token=${access_token}`;
-    fetch(url)
-        .then((res) => console.log(res))
-            .catch((error) => alert("could not get activity right now; id: " + id));
-    
-    
 }
 
 function getStream(id) {
     const keys = "latlng,altitude,time"
-    const url = `https://www.strava.com/api/v3/activities/${id}/streams?keys=${keys}&key_by_type=true&access_token=${access_token}`
+    const url = stravaBaseUrl + `activities/${id}/streams?keys=${keys}&key_by_type=true&access_token=${access_token}`
     fetch(url)
         .then((res) => res.json())
-            .then((res) => createLatLonElevTimeStream(res))
-                .catch((error) => {
-                    alert(error)
-                })
-}
-
-
-function getAthlete(res) {
-    const token = res.access_token;
-    const athleteUrl = `https://www.strava.com/api/v3/athlete?access_token=${token}`
-    fetch(athleteUrl).then(res => res.json())
-        .then(res => document.getElementById("athleteName").innerHTML = "hello, " + res.firstname)
-            .catch((error) => alert("cannot get activity with id " +id))
+            .then((res) => {
+                stop();
+                createWorldFromStream(res)
+            })
+                    .catch((error) => {
+                        alert(error)
+                    })
 }
 
 document.getElementById("authorizeStrava").onclick = function () {
     const developmentUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://localhost:8000/GPX.html&scope=activity:read_all,read_all';
     const productionUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://dennyrich.github.io/GPX.html&scope=activity:read_all,read_all';
-    location.href = productionUrl;
+    location.href = developmentUrl;
 }
