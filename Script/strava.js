@@ -86,5 +86,5 @@ function getStream(id) {
 document.getElementById("authorizeStrava").onclick = function () {
     const developmentUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://localhost:8000/GPX.html&scope=activity:read_all,read_all';
     const productionUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://dennyrich.github.io/GPX.html&scope=activity:read_all,read_all';
-    location.href = developmentUrl;
+    location.href = productionUrl;
 }
