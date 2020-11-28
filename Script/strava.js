@@ -14,6 +14,7 @@ if (access_token) {
     //reAuthorize(); //exchange code for token (through javascript post)
     //const authUrl = "http://127.0.0.1:5000/auth/" + code;
     const authUrl = azureBaseUrl + "auth/" + code;
+    document.getElementById('loading').innerHTML = "loading... this may take a while";
     fetch(authUrl, {
         method : "GET"
     })
@@ -45,6 +46,7 @@ function getActivities() {
     fetch(activitiesLink)
         .then((res) => res.ok ? res.json() : new Error("could not get activities"))
             .then((res) => {
+            document.getElementById('loading').innerHTML = "";
             const table = document.getElementById("activitiesTable");
             var id;
             var date;
@@ -70,13 +72,14 @@ function getActivities() {
 }
 
 function getStream(id) {
-    const keys = "latlng,altitude,time"
+    const keys = "latlng,altitude,time,velocity_smooth"
     const url = stravaBaseUrl + `activities/${id}/streams?keys=${keys}&key_by_type=true&access_token=${access_token}`
     fetch(url)
         .then((res) => res.json())
             .then((res) => {
                 stop();
                 createWorldFromStream(res)
+                plotPaceVsTime(res);
             })
                     .catch((error) => {
                         alert(error)

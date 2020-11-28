@@ -9,11 +9,10 @@ var cont = true;
 var segments = Array();
 var HEIGHT = document.getElementById("canvas").height;
 var WIDTH = document.getElementById("canvas").width;
-
-
+const SLIDER = document.getElementById("myRange");
 
 var SCALE;
-const HORIZON = HEIGHT / 8;
+const HORIZON = HEIGHT / 10;
 var horizon = HORIZON;
 const ELEV_SCALE = 1;
 var CAMERA_HEIGHT;
@@ -40,7 +39,7 @@ function myMap() {
 
 function drawMap(bound) {
 	if (latLons.length == 0) {
-		alert("no file uploaded or has incorrect data");
+		alert("no activity chosen/file uploaded or has incorrect data");
 		return;
 	}
 	var lineSymbol = {
@@ -63,6 +62,7 @@ function drawMap(bound) {
 }
 //**************************************************************************/
 function createWorldFromStream(stream) {
+	SLIDER.setAttribute("max", stream["time"].data.length);
 	var latLonElevTimeArr = Array();
 	var lat, lng, elev, time;
 	for (var i = 0; i < stream["latlng"]["data"].length; i++) {
@@ -110,7 +110,6 @@ function read() {
 function parseGPX(text) {
 	let trk = text.getElementsByTagName("trk")[0];
 	let nameTag = trk.getElementsByTagName("name")[0]; //or childnodes[0]
-	// console.log(nameValue);
 
 	let trkseg = trk.children[2];
 	createLatLonElevTimeGPX(trkseg);
@@ -128,20 +127,6 @@ function createLatLonElevTimeGPX(trkseg) {
 	}
 
 	createWorld(latLonElevTimeArr, true);
-}
-// create array of [lat, lon, elev, time] from stava stream object
-function createLatLonElevTimeStream(stream) {
-	latLonElevTimeArr = Array();
-	var lat, lon, elev, time;
-	for (let i = 0; i < stream["time"].data.length; i++) {
-		lat = stream["latlng"].data[i][0];
-		lon = stream["latlng"].data[i][1];
-		elev = stream["altitude"].data[i]
-		time = stream["time"].data[i];
-		latLonElevTimeArr.push([lat, lon, elev, time]);
-	}
-
-	createWorld(latLonElevTimeArr, false);
 }
 
 // create world of [lat, lon, elev, time], set bounds for map, set scale
@@ -224,6 +209,10 @@ function createSegments(world, isTrkSeg) {
 	var deltaT;
 	var pace;
 	var grade;
+	var stream = {
+		"velocity_smooth": {"data": []},
+		"time" : {"data": []}
+	};
 
 	for (let i = 1; i < world.length; i++) {
 
@@ -247,6 +236,8 @@ function createSegments(world, isTrkSeg) {
 		haversineDistance = getDistanceFromLatLon(world[i][0], world[i][1], world[i - 1][0], world[i - 1][1]);
 		if (isTrkSeg) {
 			deltaT = (world[i][3] - world[i - 1][3]) / 1000;
+			stream["velocity_smooth"]["data"].push(haversineDistance / deltaT / 60);
+			stream["time"]["data"].push(world[i][3]);
 		} else {
 			deltaT = (world[i][3] - world[i - 1][3]);
 		}
@@ -269,12 +260,20 @@ function createSegments(world, isTrkSeg) {
 		dark = !dark;
 		len = 0;
 		curveAmount = 0;
+		changeElevScaled = 0;
+	}
+	if (isTrkSeg) {
+		SLIDER.setAttribute("max", stream["time"].data.length);
+		plotPaceVsTime(stream);
 	}
 	
 }
 
 
 //********************************************************************************** */
+function hardStop() {
+	location.reload();
+}
 function stop() {
 	cont = false;
 	//document.getElementById("header").innerHTML = "Waiting for File Upload (No File Uploaded)"
@@ -284,6 +283,7 @@ function stop() {
 	if (path) {
 		path.setMap(null);
 	}
+	segments = Array();
 	latLons = Array();
 	ctx.clearRect(0, 0, WIDTH, HEIGHT);
 	myMap();
@@ -293,7 +293,7 @@ function run() {
 	cont = true;
 	var runner = new Person();
 	if (latLons.length == 0) {
-		alert("no file uploaded or has incorrect data");
+		alert("no activity chosen/file uploaded or has incorrect data");
 		return;
 	}
 	myMap.zoom = 2;
@@ -301,7 +301,12 @@ function run() {
 	var polygonList;
 	var curveFromPrev = 0;
 
-	function drawWithOffset(offset, bottomIndex) {
+	//begin animation loop
+	function drawWithOffset(offset) {
+		var bottomIndex = parseInt(SLIDER.value);
+		if (!segments[bottomIndex]) {
+			return;
+		}
 		//initialize vars
 		document.getElementById("pace").innerHTML = "Pace: " + segments[bottomIndex].pace + " /mi";
 		document.getElementById("elev").innerHTML = "Elev: " + segments[bottomIndex].elev.toString().padStart(5, 0) + " ft";
@@ -322,8 +327,11 @@ function run() {
 		});
 
 		setTimeout(function () { marker.setMap(null) }, 100);
+		if (offset == 1) {
+			extendTrace(bottomIndex);
+		}
 
-		horizon = HORIZON - bottomSeg.changeElevScaled;
+		horizon = HORIZON - bottomSeg.changeElevScaled / 3;
 		//intialize values to inititial values
 		curveFromPrev = 0;
 		var sideDist = 0;
@@ -363,22 +371,31 @@ function run() {
 			prevLeftCoord = newLeftCoord;
 			prevRightCoord = newRightCoord;
 			firstOffset = 1;
+			if (bottomIndex > 100) {
+				var s = 2;
+			}
 		}
-
-		frame(polygonList, runner); //-10 to top Y so it covers road
+		if (polygonList && polygonList[0].tLeft.y > 0) {
+			frame(polygonList, runner);
+		}
+		 //-10 to top Y so it covers road
 		runner.updateState();
-		if (offset > 0.01 && cont) { //0.25 accounts for fp errors
-			setTimeout(drawWithOffset, 20, offset - 0.05, bottomIndex);
+		if (offset > 0.1 && cont) { //0.25 accounts for fp errors
+			setTimeout(drawWithOffset, 50, offset - 0.1);
 		} else if (cont) {
-			//reset offset to 1, increment bottom index, -1 means topMost won't be used
-			setTimeout(drawWithOffset, 20, 1, bottomIndex + 1);
+			//reset offset to 1, increment bottom index
+			const newVal = parseInt(SLIDER.value) + 1;
+			SLIDER.value = newVal;
+			//document.getElementById("timeElapsed").innerHTML = Math.floor(newVal / 60) + ":" + (newVal % 60).toString().padStart(2, "0");
+			setTimeout(drawWithOffset, 50, 1);
 		} else {
 			latLons = Array();
 			segments = Array();
 			return
 		}
 	}
-	drawWithOffset(1, 1, -1); //start width index at 1, offset at 1
+	// end animation loop
+	drawWithOffset(1); //start width index at 1, offset at 1
 }
 
 function frame(polyList, runner) {

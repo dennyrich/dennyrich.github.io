@@ -7,6 +7,7 @@
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
 		integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 	<link rel="shortcut icon" href="">
+	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 
 <body>
@@ -43,31 +44,70 @@
 			<!-- <button type="button" , class="btn btn-outline-primary" , onclick="drawMap(latLons);">
 				Draw Map
 			</button> -->
-			<button type="button" , class="btn btn-outline-success" , onclick="run();">
-				Run
-			</button>
-			<button type="button" , class="btn btn-outline-danger" , onclick="stop();">
-					Stop
-			</button>
-		</div>
-		<div class="row">
-			<div class="col-2"></div>
-			<div class="col-3">
-				<b id="pace" style="color:deeppink;"></b>
-			</div>
-			<div class="col-4">
-				<b id="elev" style="color:deeppink;"></b>
-			</div>
-			<div class="col-3">
-				<b id="grade" style="color:deeppink;"></b>
-			</div>
+			<div id="paceTimePlot"></div>
 
 		</div>
+		<!-- begin area for slider control -->
+		<style>
+			.slidecontainer {
+				width: 100%;
+				padding-left: 50px;
+			}
+
+			.slider {
+				-webkit-appearance: none;
+				width: 100%;
+				height: 5px;
+				border-radius: 5px;
+				background: #d3d3d3;
+				outline: none;
+				opacity: 0.7;
+				-webkit-transition: .2s;
+				transition: opacity .2s;
+			}
+
+			.slider:hover {
+				opacity: 1;
+			}
+
+			.slider::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				appearance: none;
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				background: #4CAF50;
+				cursor: pointer;
+			}
+
+			.slider::-moz-range-thumb {
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				background: #4CAF50;
+				cursor: pointer;
+			}
+		</style>
+		<div class="slidecontainer">
+			<input type="range" min="0" value="0" class="slider" id="myRange">
+			<p><span id="timeElapsed"></span>Move slider to fast forward (but not backward)</p>
+		</div>
+		<!-- end area for slider control -->
+
 		<div class="row">
+			<!-- col with run/stop buttons and activity list -->
 			<div class="col-3">
+				<br>
+				<button type="button" , class="btn btn-outline-success" , onclick="run();">
+					Run
+				</button>
+				<button type="button" , class="btn btn-outline-danger" , onclick="hardStop();">
+					Stop
+				</button><br><br>
 				<div id="selectActivity">
+					<div id="loading"></div>
 					<h4 id="tableTitle" style="text-align: center;"></h4>
-					<div id="tableWrapper" style="height:400px;overflow:auto;">
+					<div id="tableWrapper" style="height:300px;overflow:auto;">
 						<table class="table" id="activitiesTable">
 							<tbody id="activitiesTableBody">
 							</tbody>
@@ -77,10 +117,20 @@
 			</div>
 
 			<div class="col-3 padding-0">
-
+				<b id="elev" style="color:deeppink; text-align: right;"></b>
 				<div id="googleMap"></div>
 			</div>
 			<div class="col-6 padding-0">
+				<div class="row">
+					<div class="col-1"></div>
+					<div class="col-5">
+						<b id="pace" style="color:deeppink;"></b>
+					</div>
+					<div class="col-6">
+						<b id="grade" style="color:deeppink;"></b>
+					</div>
+
+				</div>
 
 				<div><canvas id='canvas' style="border:5px solid #eb0d0d; width:100%; height:500px"></canvas></div>
 			</div>
@@ -126,7 +176,8 @@
 		</style>
 
 
-		<H5 id="athleteName"></H5>
+		<h2>About</h2>
+		<p>This is a project that is still in progress. To get started, connect to Strava to see your activities, or choose an example file. After selecting an activity, hit run for the "simulation". More analysis coming soon.</p>
 	</div>
 
 
@@ -140,6 +191,7 @@
 		<img id="flower" src="/images/flower.ico" width="50" height="50">
 		<img id="tree" src="/images/tree.png" width="200" height="200">
 	</div>
+	
 	<!-- <p>
 				About: This is a project that is still in progress. It takes a .gpx file (a type of XML file that stores coordinates, time, and
 				other data recorded on a GPS watch or smartphone). It then produces a map of the run (or hike, bike ride...) and displays a map
@@ -195,6 +247,7 @@
 	</div>
 
 	<!-- scripts -->
+	<script src="Script/plots.js"></script>
 	<script src="Script/ReadGPX.js"></script>
 	<sript src="node.js"></sript>
 	<script id="googleAPI"
