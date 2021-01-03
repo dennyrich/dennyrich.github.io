@@ -6,7 +6,7 @@
 	//$("#nav_placeholder").load("../common/nav.html");
 
 document.write('<div>\
-<nav class="navbar navbar-expand-lg navbar-light bg-light" style="background-color: #e3f2fd;">\
+<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">\
  <a class="navbar-brand" href="/">Denny Rich</a>\
  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">\
    <span class="navbar-toggler-icon"></span>\
@@ -24,7 +24,7 @@ document.write('<div>\
 		 Projects\
 	   </a>\
 	   <div class="dropdown-menu" aria-labelledby="navbarDropdown">\
-		 <a class="dropdown-item" href="/GPX.html">GPX Reader</a>\
+		 <a class="dropdown-item" href="/GPX.html#about">GPX Reader</a>\
 		 <a class="dropdown-item" href="/system.html">Control System</a>\
 		 <a class="dropdown-item" href="#" aria-disabled="true">This Site I Guess</a>\
 	   </div>\
