@@ -1,11 +1,11 @@
 const url_string = window.location.href;
 const url = new URL(url_string);
 const code = url.searchParams.get("code");
-const access_token = url.searchParams.get("access_token");
+const access_token = url.searchParams.get("t");
 const name = url.searchParams.get("name");
-const connected = url.searchParams.get("connected");
 const stravaBaseUrl = "https://www.strava.com/api/v3/";
-const azureBaseUrl = "https://activity-analyzer.azurewebsites.net/";
+const azureBaseUrl = "https://activity-analyzer.azurewebsites.net/"; //
+//const azureBaseUrl = "http://127.0.0.1:5000/";
 console.log(code);
 
 //get access token from code and use access token to get activities on page load
@@ -13,8 +13,6 @@ if (access_token) {
     getActivities();
     document.getElementById("authorizeStrava").innerHTML = "Hello, " + name + "!";
 } else if (code){
-    //reAuthorize(); //exchange code for token (through javascript post)
-    //const authUrl = "http://127.0.0.1:5000/auth/" + code;
     const authUrl = azureBaseUrl + "auth/" + code;
     document.getElementById('loading').innerHTML = "loading... this may take a while";
     document.getElementById("authorizeStrava").innerHTML = "connecting..."
@@ -35,7 +33,7 @@ if (access_token) {
                 
                 const name = res["athlete"]["firstname"];
                 const token = res.access_token;
-                location.href = `/GPX.html?access_token=${token}&name=${name}` + location.hash;
+                location.href = `/GPX.html?t=${token}&name=${name}` + location.hash;
             })
                 .catch((error) => {
                     alert("error: could not authenticate athlete \n" + error);
@@ -174,5 +172,5 @@ async function getStream(id, callback, keys="latlng,altitude,time,velocity_smoot
 document.getElementById("authorizeStrava").onclick = function () {
     const developmentUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://localhost:8000/GPX.html&scope=activity:read_all,read_all';
     const productionUrl = 'https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://dennyrich.github.io/GPX.html&scope=activity:read_all,read_all';
-    location.href = developmentUrl;
+    location.href = productionUrl;
 }

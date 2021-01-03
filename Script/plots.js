@@ -75,11 +75,10 @@ function showRegPlotOptions(id) {
 function regPlot() {
     id = document.getElementById("id").value;
     const regPlotUrl = azureBaseUrl + "reg_plot";
-    const testUrl = "http://127.0.0.1:5000/" + "reg_plot";
     input1 = document.getElementById("input1").value;
     input2 = document.getElementById("input2").value;
     response = document.getElementById("response").value;
-    fetch(testUrl +`/${id}/${access_token}?input1=${input1}&input2=${input2}&response=${response}`)
+    fetch(regPlotUrl +`/${id}/${access_token}?input1=${input1}&input2=${input2}&response=${response}`)
         .then((res) => res.text())
             .then((res) => {
                 document.getElementById("regPlot").innerHTML = res;

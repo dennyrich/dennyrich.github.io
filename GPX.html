@@ -14,17 +14,13 @@
 <body>
 	<script src="/Script/nav.js"></script>
 	<div style="margin: 0px 150px;">
-
+		<script>
+			if (!location.hash) {
+				location.hash = "#about";
+			}	
+		</script>
 		<br>
 		<button id="authorizeStrava" class="btn btn-primary orange-background">Connect to Strava</button>
-
-		<div style="text-align: right;">
-
-
-
-		</div>
-
-
 		<div class="row">
 			<!-- col with run/stop buttons and activity list -->
 			<div class="col-3">
