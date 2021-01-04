@@ -14,7 +14,7 @@ if (access_token) {
     document.getElementById("authorizeStrava").innerHTML = "Hello, " + name + "!";
 } else if (code){
     const authUrl = azureBaseUrl + "auth/" + code;
-    document.getElementById('loading').innerHTML = "loading... this may take a while";
+    document.getElementById('loading').innerHTML = "connecting... this may take a while";
     document.getElementById("authorizeStrava").innerHTML = "connecting..."
     fetch(authUrl, {
         method : "GET"

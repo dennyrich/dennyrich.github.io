@@ -2,7 +2,7 @@
 
 var latLons = Array();
 var world = Array();
-var swBound, neBound, bound; //sw, ne, and google maps object bound
+var bound; //sw, ne, and google maps object bound
 var path; //google maps object
 var map;
 var cont = true;
@@ -37,19 +37,6 @@ function myMap() {
 	map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
 }
 
-class Vector {
-	constructor(x, y) {
-		this.x = x;
-		this.y = y;
-	}
-	magnitude() {
-		return Math.sqrt(this.x * this.x + this.y * this.y);
-	}
-	static angleBetween(v1, v2) {
-		return Math.atan((v1.x * v2.y - v1.y * v2.x) / (v1.x * v2.x + v1.y * v2.y));
-	}
-}
-
 function drawMap(bound) {
 	if (latLons.length == 0) {
 		alert("no activity chosen/file uploaded or has incorrect data");
@@ -68,13 +55,131 @@ function drawMap(bound) {
 		strokeWeight: 2,
 		icons: [{ icon: lineSymbol, offset: '0%' }]
 	});
-	console.log(bound)
 	path.setMap(map);
 	map.fitBounds(bound);
 	
 }
+//**************************************************************************/
+function createWorldFromStream(stream) {
+	SLIDER.setAttribute("max", stream["time"].data.length);
+	var latLonElevTimeArr = Array();
+	var lat, lng, elev, time;
+	for (var i = 0; i < stream["latlng"]["data"].length; i++) {
+		lat = stream["latlng"]["data"][i][0];
+		lng = stream["latlng"]["data"][i][1];
+		elev = stream["altitude"]["data"][i];
+		time = stream["time"]["data"][i];
+		latLonElevTimeArr.push([lat, lng, elev, time]);
+	}
+	createWorld(latLonElevTimeArr, false);
+}
+//file name is null if file is uploaded
+function read() {
+	let text, xmlText;
+	if (document.getElementById("file").value.length > 0) {
+		//use example file
+		const fileName = document.getElementById("file").value;
+		const request = new XMLHttpRequest();
+		request.open('GET', fileName, false);
+		request.send(null);
+		text = request.responseText;
+		xmlText = request.responseXML;
+		parseGPX(xmlText);
+	} else {
+		//using user file
+		if (document.getElementById("GPX_file").files.length == 0) {
+			alert("no file uploaded");
+			return;
+		}
+		const gpxFile = document.getElementById("GPX_file").files[0];
+		const reader = new FileReader();
+		const parser = new DOMParser();
+		reader.onloadend = function () {
+			text = reader.result;
+			//convert result to xml format
+			xmlText = parser.parseFromString(text, "text/xml");
+			parseGPX(xmlText);
+		};
+		reader.readAsText(gpxFile);
+	}
+	//document.getElementById("header").innerHTML = "File Uploaded..."
+}
+
+//creates data elements from xml (.gpx) doc and calls createLatLonElevTime
+function parseGPX(text) {
+	let trk = text.getElementsByTagName("trk")[0];
+	let nameTag = trk.getElementsByTagName("name")[0]; //or childnodes[0]
+
+	let trkseg = trk.children[2];
+	createLatLonElevTimeGPX(trkseg);
+}
+
+// create array of [lat, lon, elev, time] from trkseg of GPX file
+function createLatLonElevTimeGPX(trkseg) {
+	latLonElevTimeArr = Array();
+	for (const dataPacket of trkseg.children) {
+		const lat = dataPacket.attributes[0].nodeValue;
+		const lon = dataPacket.attributes[1].nodeValue;
+		const elev = dataPacket.children[0].firstChild.nodeValue;
+		const time = Date.parse(dataPacket.children[1].firstChild.nodeValue);
+		latLonElevTimeArr.push([lat, lon, elev, time]);
+	}
+
+	createWorld(latLonElevTimeArr, true);
+}
+
+// create world of [lat, lon, elev, time], set bounds for map, set scale
+function createWorld(latLonElevTimeArr, isTrkSeg) {
+	latlons = [];
+	world = [];
+
+	const firstPacket = latLonElevTimeArr[0];
+	var total_magnitude = 0;
+	var prevLat = firstPacket[0];
+	var prevLon = firstPacket[1];
+	bound = new google.maps.LatLngBounds();
+	for (const dataPacket of latLonElevTimeArr) {
+		const lat = dataPacket[0];
+		const lon = dataPacket[1];
+		const elev = dataPacket[2];
+		const time = dataPacket[3];
+
+		world.push([lat, lon, elev, time]);
+
+		total_magnitude += Math.sqrt((lat - prevLat) ** 2 + (lon - prevLon) ** 2);
+		latLons.push(new google.maps.LatLng(lat, lon));
+		bound.extend(new google.maps.LatLng(lat, lon));
+
+		prevLat = lat;
+		prevLon = lon;
+	}
+	average_magnitude = total_magnitude / world.length;
+
+	//desired height = HEIGHT / 20 --> averave_magnitude * SCALE = desired height --> Scale = (HEIGHT / 6) / average_magnitude
+	SCALE = (HEIGHT / 4) / average_magnitude;
+	CAMERA_DIST_BEHIND = average_magnitude * SCALE / 2;
+	CAMERA_HEIGHT = HEIGHT - average_magnitude * SCALE * 5;
+	createSegments(world, isTrkSeg);
+	drawMap(bound);
+}
+//***************************************************************************** */
+
+class Vector {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	magnitude() {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+	static angleBetween(v1, v2) {
+		return Math.atan((v1.x * v2.y - v1.y * v2.x) / (v1.x * v2.x + v1.y * v2.y));
+	}
+}
+
 
 function createSegments(world, isTrkSeg) {
+	segments = [];
 	var distX, distY, distElev, currVec, angleFromPrev, roadObject;
 	var prevVec = new Vector(0, 0);
 
@@ -93,7 +198,6 @@ function createSegments(world, isTrkSeg) {
 	};
 
 	for (let i = 1; i < world.length; i++) {
-
 		distX = world[i][0] - world[i - 1][0];
 		distY = world[i][1] - world[i - 1][1];
 		distElev = (world[i][2] - world[i - 1][2]) * 3.281;
@@ -153,6 +257,7 @@ function hardStop() {
 	location.reload();
 }
 function stop() {
+	Plotly.purge(PACETIME);
 	cont = false;
 	//document.getElementById("header").innerHTML = "Waiting for File Upload (No File Uploaded)"
 	if (myMap) {
