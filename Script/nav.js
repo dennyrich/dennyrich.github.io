@@ -1,6 +1,7 @@
 const nav = document.createElement("div");
 document.body.insertBefore(nav, document.body.firstChild);
-const navContent = '<div>\
+const navContent =
+  '<div>\
 <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">\
  <a class="navbar-brand" href="/">Denny Rich</a>\
  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">\
@@ -23,11 +24,14 @@ const navContent = '<div>\
 	   </a>\
 	   <div class="dropdown-menu" aria-labelledby="navbarDropdown">\
 		 <a class="dropdown-item" href="/GPX.html#about">Strava Activity Analyzer</a>\
+		 <a class="dropdown-item" href="/challenges_app.html">Group Challenges Game</a>\
 		 <a class="dropdown-item" href="/system.html">Control System</a>\
 		 <a class="dropdown-item" href="#" aria-disabled="true">This Site I Guess</a>\
 	   </div>\
 	 </li>\
  </div>\
 </nav>\
-\<div/>';
+<div/>';
 nav.innerHTML = navContent;
+
+fetch("http://127.0.0.1:5000/test"); //restart server when first visiting site

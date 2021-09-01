@@ -1,174 +1,293 @@
-<!DOCTYPE HTML>
-<HTML>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Denny Rich</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <link rel="shortcut icon" href="" />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="Style/style.css" />
+  </head>
 
-<head>
-	<meta charset="UTF-8" />
-	<title>Denny Rich</title>
-	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-		integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-	<link rel="shortcut icon" href="">
-	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-	<link rel="stylesheet" href="Style/style.css">
-</head>
+  <body style="margin : 100px; margin-top: 20px;">
+    <script src="/Script/nav.js"></script>
+    <div>
+      <script>
+        if (!location.hash) {
+          location.hash = "#about";
+        }
+      </script>
+      <br />
+      <button id="authorizeStrava" class="btn btn-primary orange-background">
+        Connect to Strava
+      </button>
+      <div class="row">
+        <!-- col with run/stop buttons and activity list -->
+        <div class="col-3">
+          <br />
+          <div id="project_nav">
+            <div class="container bg-light">
+              <h3 class="mt-2">Activity "Analysis"</h3>
+              <ul class="list-unstyled">
+                <li><a href="#about">About</a></li>
+                <li>
+                  <a href="#singleGraph" title="analyze a single activity"
+                    >Activity Analysis</a
+                  >
+                </li>
+                <li>
+                  <a href="#graph" title="analyze all activities"
+                    >General Analysis</a
+                  >
+                </li>
+                <li>
+                  <a href="#graph" title="compare two activities"
+                    >Compare Activities</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="#simulation"
+                    title="Create animated simulation of activity"
+                    >Simulation</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <!-- begin menu item elements -->
+        <div class="col-9">
+          <!-- begin about section -->
+          <div id="about" class="menu-item">
+            <h2>About | Activity "Analysis"</h2>
+            <p>
+              To get started, connect to Strava to see your activities. Then,
+              try the simulation to see an animated simulation of your chosen
+              activity, view analysis of a single activity, or view analysis of
+              all activities in general. Analysis features are currently in
+              progress.
+            </p>
+            <br /><br />
+            <p>
+              Note: The server takes a while to restart (I'm using the free
+              version). If you get an error message when trying to connect to
+              Strava, try again and it should work.
+            </p>
+          </div>
+          <!-- begin simulation section -->
+          <div id="simulation" class="menu-item">
+            <div id="paceTimePlot" class="padding-0"></div>
+            <div class="slidecontainer padding-0">
+              <input
+                type="range"
+                min="0"
+                value="0"
+                class="slider"
+                id="myRange"
+              />
+              <span
+                ><button
+                  type="button"
+                  ,
+                  class="btn btn-outline-success"
+                  ,
+                  onclick="run();"
+                >
+                  Run
+                </button>
+                <button
+                  type="button"
+                  ,
+                  class="btn btn-outline-danger"
+                  ,
+                  onclick="stop();"
+                >
+                  Stop/Reset
+                </button>
+                <button
+                  type="button"
+                  ,
+                  class="btn btn-primary orange-background"
+                  ,
+                  data-toggle="modal"
+                  data-target="#activities"
+                >
+                  Select Activity
+                </button>
+                <span id="timeElapsed"></span>
+              </span>
+            </div>
+            <div class="row">
+              <div class="col-4 padding-0">
+                <b id="elev" style="color:deeppink; text-align: right;"></b>
+                <div id="googleMap"></div>
+              </div>
+              <div class="col-8 padding-0">
+                <div class="row">
+                  <div class="col-1"></div>
+                  <div class="col-5">
+                    <b id="pace" style="color:deeppink;"></b>
+                  </div>
+                  <div class="col-6">
+                    <b id="grade" style="color:deeppink;"></b>
+                  </div>
+                </div>
+                <div>
+                  <canvas
+                    id="canvas"
+                    style="border:5px solid #eb0d0d; width:100%; height:500px"
+                  ></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- begin single activity section -->
+          <div id="singleGraph" class="menu-item">
+            <!-- <p>in progress...</p> -->
+            <button
+              type="button"
+              ,
+              class="btn btn-primary orange-background"
+              ,
+              data-toggle="modal"
+              data-target="#activities"
+            >
+              Select Activity
+            </button>
+            <div id="singleMetaData" style="display: none">
+              <h4 id="singleName"></h4>
+              <h6>
+                <span id="date"></span>, Kudos: <span id="numKudos"></span>,
+                Average Speed: <span id="averageSpeed"></span>m/s
+              </h6>
+              <br />
+              <p>
+                Below is a scatter plot of your activity, where each point
+                represents (lat, lng, altitude). The points are colored based on
+                the velocity at that point. Do you notice any interesting
+                features?
+              </p>
+              <div id="pacePlot"></div>
+            </div>
+            <p>
+              After selecting activity, select two "inputs" and one "output".
+              For example, you can observe how cadence and grade are related to
+              velocity.
+            </p>
+            <form>
+              <input type="hidden" id="id" />
+              <span
+                ><h4 id="activityTitle"></h4>
+                <div id="actitivyImage"></div
+              ></span>
+              <span
+                ><h4>Question:</h4>
+                How are
+                <select class="plot-select" id="input1"
+                  ><option selected disabled>First Input</option></select
+                >
+                and
+                <select class="plot-select" id="input2"
+                  ><option selected disabled>Second Input</option></select
+                >
+                associated with
+                <select class="plot-select" id="response"
+                  ><option selected disabled>Response</option></select
+                ></span
+              >
+              <button
+                type="button"
+                class="btn-success"
+                onsubmit="return false"
+                onclick="regPlot()"
+              >
+                Go!
+              </button>
+            </form>
+            <div id="regPlot"></div>
+          </div>
+          <!-- begin general analyis section -->
+          <div id="graph" class="menu-item">
+            <p>Coming soon...</p>
+            <p>Ideas: build model for number of kudos,</p>
+          </div>
+          <!-- begin compare two activities section -->
+          <div id="compare" class="menu-item">
+            <p>Coming soon...</p>
+          </div>
+        </div>
+        <!-- end menu item elements -->
+      </div>
+    </div>
 
-<body>
-	<script src="/Script/nav.js"></script>
-	<div style="margin: 0px 150px;">
-		<script>
-			if (!location.hash) {
-				location.hash = "#about";
-			}	
-		</script>
-		<br>
-		<button id="authorizeStrava" class="btn btn-primary orange-background">Connect to Strava</button>
-		<div class="row">
-			<!-- col with run/stop buttons and activity list -->
-			<div class="col-3">
-				<br>
-				<div id="project_nav">
-					<div class="container bg-light">
-						<h3 class="mt-2">Activity "Analysis"</h3>
-						<ul class="list-unstyled">
-							<li><a href="#about">About</a></li>
-							<li><a href="#singleGraph" title="analyze a single activity">Activity Analysis</a></li>
-							<li><a href="#graph" title="analyze all activities">General Analysis</a></li>		
-							<li><a href="#graph" title="compare two activities">Compare Activities</a></li>		
-							<li><a href="#simulation" title="Create animated simulation of activity">Simulation</a></li>		
-						</ul>
-					</div>
-				</div>
-			</div>
-			<!-- begin menu item elements -->
-			<div class="col-9">
-				<!-- begin about section -->
-				<div id="about" class="menu-item">
-						<h2>About | Activity "Analysis"</h2>
-						<p>To get started, connect to Strava to see your activities. Then, try the simulation 
-							to see an animated simulation of your chosen activity, view analysis of a single activity, or view
-							analysis of all activities in general. Analysis features are currently in progress.
-						</p>
-				</div>
-				<!-- begin simulation section -->
-				<div id="simulation" class="menu-item">
-					<div id="paceTimePlot" class="padding-0"></div>
-					<div class="slidecontainer padding-0">
-						<input type="range" min="0" value="0" class="slider" id="myRange">
-						<span><button type="button" , class="btn btn-outline-success" , onclick="run();">
-								Run
-							</button>
-							<button type="button" , class="btn btn-outline-danger" , onclick="stop();">
-								Stop/Reset
-							</button>
-							<button type="button" , class="btn btn-primary orange-background" , data-toggle="modal" data-target="#activities">
-								Select Activity
-							</button>
-							<span id="timeElapsed"></span>
-						</span>
-					</div>
-					<div class="row">
-						<div class="col-4 padding-0">
-							<b id="elev" style="color:deeppink; text-align: right;"></b>
-							<div id="googleMap"></div>
-						</div>
-						<div class="col-8 padding-0">
-							<div class="row">
-								<div class="col-1"></div>
-								<div class="col-5">
-									<b id="pace" style="color:deeppink;"></b>
-								</div>
-								<div class="col-6">
-									<b id="grade" style="color:deeppink;"></b>
-								</div>
-							</div>
-							<div><canvas id='canvas' style="border:5px solid #eb0d0d; width:100%; height:500px"></canvas>
-							</div>
-						</div>
-					</div>
+    <div style="display:none;">
+      <img id="flower" src="/images/flower.ico" width="50" height="50" />
+      <img id="tree" src="/images/tree.png" width="200" height="200" />
+    </div>
 
-				</div>
-				<!-- begin single activity section -->
-				<div id="singleGraph" class="menu-item">
-					<p>coming soon...</p>
-					<p>After selecting activity, select two "inputs" and one "output". For example, you can observe how cadence and grade are related to velocity.</p>
-					<button type="button" , class="btn btn-primary orange-background" , data-toggle="modal" data-target="#activities">
-						Select Activity
-					</button>
-					<form>
-						<input type="hidden" id="id"/>
-						<span><h4 id="activityTitle"></h4><div id="actitivyImage"></div></span>
-						<span><h4>Question:</h4> How are 
-							<select class="plot-select" id="input1"><option selected disabled>First Input</option></select> and 
-							<select class="plot-select" id="input2"><option selected disabled>Second Input</option></select> associated with 
-							<select class="plot-select" id="response"><option selected disabled>Response</option></select></span>
-						<button type="button" class="btn-success" onsubmit="return false" onclick="regPlot()">Go!</button>
-					</form>
-					<div id="regPlot"></div>
-				</div>
-				<!-- begin general analyis section -->
-				<div id="graph" class="menu-item">
-					<p>Coming soon...</p>
-				</div>
-				<!-- begin compare two activities section -->
-				<div id="compare" class="menu-item">
-					<p>Coming soon...</p>
-				</div>
-			</div>
-			<!-- end menu item elements -->
-		</div>
+    <!-- modals -->
+    <div
+      class="modal fade bd-example-modal-lg"
+      id="activities"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Select Activity</h5>
+          </div>
+          <div class="modal-body">
+            <div id="selectActivity">
+              <div id="loading"></div>
+              <h4 id="tableTitle" style="text-align: center;"></h4>
+              <div id="tableWrapper" style="height:300px;overflow:auto;">
+                <table class="table" id="activitiesTable">
+                  <tbody id="activitiesTableBody"></tbody>
+                </table>
+                <div style="text-align: center;">
+                  <button id="loadMore" value="1" onclick="getActivities();">
+                    load more
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer"></div>
+        </div>
+      </div>
+    </div>
 
-	</div>
-
-	<div style="display:none;">
-		<img id="flower" src="/images/flower.ico" width="50" height="50">
-		<img id="tree" src="/images/tree.png" width="200" height="200">
-	</div>
-
-
-	<!-- modals -->
-	<div class="modal fade bd-example-modal-lg" id="activities" tabindex="-1" role="dialog"
-		aria-labelledby="exampleModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-lg" role="document">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="exampleModalLabel">Select Activity</h5>
-				</div>
-				<div class="modal-body">
-					<div id="selectActivity">
-						<div id="loading"></div>
-						<h4 id="tableTitle" style="text-align: center;"></h4>
-						<div id="tableWrapper" style="height:300px;overflow:auto;">
-							<table class="table" id="activitiesTable">
-								<tbody id="activitiesTableBody">
-								</tbody>
-							</table>
-							<div style="text-align: center;"><button id="loadMore" value="1" onclick="getActivities();">load more</button></div>
-						</div>
-					</div>
-				</div>
-				<div class="modal-footer">
-					
-
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- scripts -->
-	<script src="Script/plots.js"></script>
-	<script src="Script/simulation.js"></script>
-	<script id="googleAPI"
-		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap&libraries=geometry"></script>
-	<script src="Script/strava.js"></script>
-	<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-		integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-		crossorigin="anonymous"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-		integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-		crossorigin="anonymous"></script>
-	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-		integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-		crossorigin="anonymous"></script>
-
-</body>
-
-</HTML>
+    <!-- scripts -->
+    <script src="Script/plots.js"></script>
+    <script src="Script/simulation.js"></script>
+    <script
+      id="googleAPI"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-X55h-0v2ZqDmypIysuHaWoj_Cmp1J8&callback=myMap&libraries=geometry"
+    ></script>
+    <script src="Script/strava.js"></script>
+    <script
+      src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+      integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+      integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
