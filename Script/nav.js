@@ -16,7 +16,7 @@ const navContent =
 	   <a class="nav-link" href="/contact.html">Contact <span class="sr-only">(current)</span></a>\
 	 </li>\
 	 <li class="nav-item">\
-	   <a class="nav-link" href="/data/Resume.pdf">Resume</a>\
+	   <a class="nav-link" href="/data/Resume-21.pdf">Resume</a>\
 	 </li>\
 	 <li class="nav-item dropdown">\
 	   <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">\
@@ -33,5 +33,3 @@ const navContent =
 </nav>\
 <div/>';
 nav.innerHTML = navContent;
-
-fetch("http://127.0.0.1:5000/test"); //restart server when first visiting site
