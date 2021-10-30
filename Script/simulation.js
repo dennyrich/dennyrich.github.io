@@ -29,6 +29,12 @@ ctx.font = "30px Arial";
 ctx.fillStyle = "red";
 ctx.textAlign = "center";
 
+function setUpNextSimulation(stream) {
+	stop();
+    createWorldFromStream(stream)
+    plotPaceVsTime(stream);
+}
+
 function myMap() {
 	var mapProp = {
 		center: new google.maps.LatLng(37.77, -122.41),

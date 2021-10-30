@@ -25,7 +25,6 @@ const navContent =
 	   <div class="dropdown-menu" aria-labelledby="navbarDropdown">\
 		 <a class="dropdown-item" href="/GPX.html#about">Strava Activity Analyzer</a>\
 		 <a class="dropdown-item" href="/challenges_app.html">Group Challenges Game</a>\
-		 <a class="dropdown-item" href="/system.html">Control System</a>\
 		 <a class="dropdown-item" href="#" aria-disabled="true">This Site I Guess</a>\
 	   </div>\
 	 </li>\
@@ -33,3 +32,5 @@ const navContent =
 </nav>\
 <div/>';
 nav.innerHTML = navContent;
+
+//  <a class="dropdown-item" href="/system.html">Control System</a>\
