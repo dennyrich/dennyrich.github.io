@@ -79,9 +79,11 @@ function showRegPlotOptions(id) {
 
       //populate drop down select list
       const elements = document.getElementsByClassName("plot-select");
+      //for each of the 3 select drop downs
       for (var s = 0; s < elements.length; s++) {
         const select = elements.item(s);
         select.length = 1;
+        //for each option in the available options
         for (var i = 0; i < options.length; i++) {
           var opt = options[i];
           var el = document.createElement("option");
