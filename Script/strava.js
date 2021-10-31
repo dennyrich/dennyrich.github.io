@@ -4,8 +4,8 @@ const code = url.searchParams.get("code");
 const access_token = url.searchParams.get("t");
 const name = url.searchParams.get("name");
 const stravaBaseUrl = "https://www.strava.com/api/v3/";
-//const azureBaseUrl = "https://activity-analyzer.azurewebsites.net/";
-const azureBaseUrl = "http://127.0.0.1:5000/";
+const azureBaseUrl = "https://activity-analyzer.azurewebsites.net/";
+//const azureBaseUrl = "http://127.0.0.1:5000/";
 console.log(code);
 
 //get access token from code and use access token to get activities on page load
@@ -203,5 +203,5 @@ document.getElementById("authorizeStrava").onclick = function() {
     "https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://localhost:8000/GPX.html&scope=activity:read_all,read_all";
   const productionUrl =
     "https://www.strava.com/oauth/authorize?client_id=56464&response_type=code&redirect_uri=http://dennyrich.github.io/GPX.html&scope=activity:read_all,read_all";
-  location.href = developmentUrl;
+  location.href = productionUrl;
 };
